@@ -1,5 +1,4 @@
 services:
-
   # Local services are available on their ports, but also available on:
   # http://api.localhost.tiangolo.com: backend
   # http://dashboard.localhost.tiangolo.com: frontend
@@ -79,6 +78,9 @@ services:
           action: rebuild
     # TODO: remove once coverage is done locally
     volumes:
+      - ./backend/app:/app/app
+      - ./backend/pyproject.toml:/app/pyproject.toml
+      - ./backend/scripts:/app/scripts
       - ./backend/htmlcov:/app/htmlcov
     environment:
       SMTP_HOST: "mailcatcher"

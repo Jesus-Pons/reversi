@@ -1,6 +1,10 @@
 import uuid
+from enum import Enum as PyEnum
+from typing import Any, List, Optional
 
 from pydantic import EmailStr
+from sqlalchemy import JSON, Column
+from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -43,7 +47,14 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+    games_as_black: list["Game"] = Relationship(
+        back_populates="player_black",
+        sa_relationship_kwargs={"foreign_keys": "Game.player_black_id"},
+    )
+    games_as_white: list["Game"] = Relationship(
+        back_populates="player_white",
+        sa_relationship_kwargs={"foreign_keys": "Game.player_white_id"},
+    )
 
 
 # Properties to return via API, id is always required
@@ -53,42 +64,6 @@ class UserPublic(UserBase):
 
 class UsersPublic(SQLModel):
     data: list[UserPublic]
-    count: int
-
-
-# Shared properties
-class ItemBase(SQLModel):
-    title: str = Field(min_length=1, max_length=255)
-    description: str | None = Field(default=None, max_length=255)
-
-
-# Properties to receive on item creation
-class ItemCreate(ItemBase):
-    pass
-
-
-# Properties to receive on item update
-class ItemUpdate(ItemBase):
-    title: str | None = Field(default=None, min_length=1, max_length=255)  # type: ignore
-
-
-# Database model, database table inferred from class name
-class Item(ItemBase, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    owner_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, ondelete="CASCADE"
-    )
-    owner: User | None = Relationship(back_populates="items")
-
-
-# Properties to return via API, id is always required
-class ItemPublic(ItemBase):
-    id: uuid.UUID
-    owner_id: uuid.UUID
-
-
-class ItemsPublic(SQLModel):
-    data: list[ItemPublic]
     count: int
 
 
@@ -111,3 +86,89 @@ class TokenPayload(SQLModel):
 class NewPassword(SQLModel):
     token: str
     new_password: str = Field(min_length=8, max_length=128)
+
+
+# Reversi
+
+
+# --- ENUMS ---
+class AIAlgorithm(str, PyEnum):
+    RANDOM = "random"
+    ALPHABETA = "alphabeta"
+    MONTECARLO = "montecarlo"
+    QLEARNING = "qlearning"
+
+
+class Turn(str, PyEnum):
+    BLACK = "black"
+    WHITE = "white"
+
+
+class Winner(str, PyEnum):
+    BLACK = "black"
+    WHITE = "white"
+    DRAW = "draw"
+
+
+# --- MODELOS ---
+
+
+class AIConfig(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    algorithm: AIAlgorithm = Field(sa_column=Column(SAEnum(AIAlgorithm)))
+    parameters: dict = Field(sa_column=Column(JSON))
+
+    # Relaciones
+    config_games_as_black: list["Game"] = Relationship(
+        back_populates="bot_black",
+        sa_relationship_kwargs={"foreign_keys": "Game.bot_black_id"},
+    )
+    config_games_as_white: list["Game"] = Relationship(
+        back_populates="bot_white",
+        sa_relationship_kwargs={"foreign_keys": "Game.bot_white_id"},
+    )
+
+
+class Game(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+
+    # Foreign Keys
+    player_black_id: uuid.UUID | None = Field(default=None, foreign_key="user.id")
+    bot_black_id: uuid.UUID | None = Field(default=None, foreign_key="aiconfig.id")
+    player_white_id: uuid.UUID | None = Field(default=None, foreign_key="user.id")
+    bot_white_id: uuid.UUID | None = Field(default=None, foreign_key="aiconfig.id")
+
+    board_state: List[Any] = Field(sa_column=Column(JSON))
+    score_black: int = Field(default=2)
+    score_white: int = Field(default=2)
+    current_turn: Turn = Field(sa_column=Column(SAEnum(Turn)))
+    winner: Winner | None = Field(default=None, sa_column=Column(SAEnum(Winner)))
+
+    player_black: Optional["User"] = Relationship(
+        back_populates="games_as_black",
+        sa_relationship_kwargs={"foreign_keys": "Game.player_black_id"},
+    )
+    bot_black: Optional["AIConfig"] = Relationship(
+        back_populates="config_games_as_black",
+        sa_relationship_kwargs={"foreign_keys": "Game.bot_black_id"},
+    )
+    player_white: Optional["User"] = Relationship(
+        back_populates="games_as_white",
+        sa_relationship_kwargs={"foreign_keys": "Game.player_white_id"},
+    )
+    bot_white: Optional["AIConfig"] = Relationship(
+        back_populates="config_games_as_white",
+        sa_relationship_kwargs={"foreign_keys": "Game.bot_white_id"},
+    )
+
+    moves: list["Moves"] = Relationship(back_populates="game")
+
+
+class Moves(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    game_id: uuid.UUID = Field(foreign_key="game.id")
+    move_number: int
+    player: Turn = Field(sa_column=Column(SAEnum(Turn)))
+    position: List[Any] | None = Field(default=None, sa_column=Column(JSON))
+
+    game: Game = Relationship(back_populates="moves")
