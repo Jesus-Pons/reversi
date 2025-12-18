@@ -55,6 +55,11 @@ class User(UserBase, table=True):
         back_populates="player_white",
         sa_relationship_kwargs={"foreign_keys": "Game.player_white_id"},
     )
+    games_owned: list["Game"] = Relationship(
+        back_populates="owner",
+        cascade_delete=True,
+        sa_relationship_kwargs={"foreign_keys": "Game.owner_id"},
+    )
 
 
 # Properties to return via API, id is always required
@@ -133,6 +138,7 @@ class Game(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
 
     # Foreign Keys
+    owner_id: uuid.UUID = Field(foreign_key="user.id", ondelete="CASCADE")
     player_black_id: uuid.UUID | None = Field(default=None, foreign_key="user.id")
     bot_black_id: uuid.UUID | None = Field(default=None, foreign_key="aiconfig.id")
     player_white_id: uuid.UUID | None = Field(default=None, foreign_key="user.id")
@@ -162,6 +168,10 @@ class Game(SQLModel, table=True):
     )
 
     moves: list["Moves"] = Relationship(back_populates="game")
+    owner: "User" = Relationship(
+        back_populates="games_owned",
+        sa_relationship_kwargs={"foreign_keys": "Game.owner_id"},
+    )
 
 
 class Moves(SQLModel, table=True):
