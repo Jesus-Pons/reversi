@@ -3,22 +3,22 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { GamesReadGamesData, GamesReadGamesResponse, GamesCreateGameData, GamesCreateGameResponse, GamesReadMyGamesData, GamesReadMyGamesResponse, GamesGetGameByIdData, GamesGetGameByIdResponse, GamesGetValidMovesData, GamesGetValidMovesResponse, GamesHumanMoveData, GamesHumanMoveResponse, GamesMakeBotMoveData, GamesMakeBotMoveResponse, GamesGetGameHistoryData, GamesGetGameHistoryResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
-export class ItemsService {
+export class GamesService {
     /**
-     * Read Items
-     * Retrieve items.
+     * Read Games
+     * Retrieve Games.
      * @param data The data for the request.
      * @param data.skip
      * @param data.limit
-     * @returns ItemsPublic Successful Response
+     * @returns GamesPublic Successful Response
      * @throws ApiError
      */
-    public static readItems(data: ItemsReadItemsData = {}): CancelablePromise<ItemsReadItemsResponse> {
+    public static readGames(data: GamesReadGamesData = {}): CancelablePromise<GamesReadGamesResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/items/',
+            url: '/api/v1/games/',
             query: {
                 skip: data.skip,
                 limit: data.limit
@@ -30,17 +30,17 @@ export class ItemsService {
     }
     
     /**
-     * Create Item
-     * Create new item.
+     * Create Game
+     * Create new game.
      * @param data The data for the request.
      * @param data.requestBody
-     * @returns ItemPublic Successful Response
+     * @returns Game Successful Response
      * @throws ApiError
      */
-    public static createItem(data: ItemsCreateItemData): CancelablePromise<ItemsCreateItemResponse> {
+    public static createGame(data: GamesCreateGameData): CancelablePromise<GamesCreateGameResponse> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/v1/items/',
+            url: '/api/v1/games/',
             body: data.requestBody,
             mediaType: 'application/json',
             errors: {
@@ -50,19 +50,21 @@ export class ItemsService {
     }
     
     /**
-     * Read Item
-     * Get item by ID.
+     * Read My Games
+     * Retrieve my Games.
      * @param data The data for the request.
-     * @param data.id
-     * @returns ItemPublic Successful Response
+     * @param data.skip
+     * @param data.limit
+     * @returns GamesPublic Successful Response
      * @throws ApiError
      */
-    public static readItem(data: ItemsReadItemData): CancelablePromise<ItemsReadItemResponse> {
+    public static readMyGames(data: GamesReadMyGamesData = {}): CancelablePromise<GamesReadMyGamesResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/items/{id}',
-            path: {
-                id: data.id
+            url: '/api/v1/games/me/',
+            query: {
+                skip: data.skip,
+                limit: data.limit
             },
             errors: {
                 422: 'Validation Error'
@@ -71,20 +73,62 @@ export class ItemsService {
     }
     
     /**
-     * Update Item
-     * Update an item.
+     * Get Game By Id
+     * Get a game by its ID.
      * @param data The data for the request.
-     * @param data.id
-     * @param data.requestBody
-     * @returns ItemPublic Successful Response
+     * @param data.gameId
+     * @returns Game Successful Response
      * @throws ApiError
      */
-    public static updateItem(data: ItemsUpdateItemData): CancelablePromise<ItemsUpdateItemResponse> {
+    public static getGameById(data: GamesGetGameByIdData): CancelablePromise<GamesGetGameByIdResponse> {
         return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/api/v1/items/{id}',
+            method: 'GET',
+            url: '/api/v1/games/{game_id}/',
             path: {
-                id: data.id
+                game_id: data.gameId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Valid Moves
+     * Get valid moves for the current player in the game.
+     * @param data The data for the request.
+     * @param data.gameId
+     * @returns ValidMovesResponse Successful Response
+     * @throws ApiError
+     */
+    public static getValidMoves(data: GamesGetValidMovesData): CancelablePromise<GamesGetValidMovesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/games/{game_id}/valid-moves/',
+            path: {
+                game_id: data.gameId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Human Move
+     * Make a move in the game.
+     * @param data The data for the request.
+     * @param data.gameId
+     * @param data.requestBody
+     * @returns Game Successful Response
+     * @throws ApiError
+     */
+    public static humanMove(data: GamesHumanMoveData): CancelablePromise<GamesHumanMoveResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/games/{game_id}/move/',
+            path: {
+                game_id: data.gameId
             },
             body: data.requestBody,
             mediaType: 'application/json',
@@ -95,19 +139,40 @@ export class ItemsService {
     }
     
     /**
-     * Delete Item
-     * Delete an item.
+     * Make Bot Move
+     * Make a move in the game.
      * @param data The data for the request.
-     * @param data.id
-     * @returns Message Successful Response
+     * @param data.gameId
+     * @returns Game Successful Response
      * @throws ApiError
      */
-    public static deleteItem(data: ItemsDeleteItemData): CancelablePromise<ItemsDeleteItemResponse> {
+    public static makeBotMove(data: GamesMakeBotMoveData): CancelablePromise<GamesMakeBotMoveResponse> {
         return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/api/v1/items/{id}',
+            method: 'POST',
+            url: '/api/v1/games/{game_id}/bot-move/',
             path: {
-                id: data.id
+                game_id: data.gameId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Game History
+     * Get the move history of the game.
+     * @param data The data for the request.
+     * @param data.gameId
+     * @returns Moves Successful Response
+     * @throws ApiError
+     */
+    public static getGameHistory(data: GamesGetGameHistoryData): CancelablePromise<GamesGetGameHistoryResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/games/{game_id}/history/',
+            path: {
+                game_id: data.gameId
             },
             errors: {
                 422: 'Validation Error'
