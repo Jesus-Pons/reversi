@@ -6,11 +6,10 @@ from typing import Any
 
 import emails  # type: ignore
 import jwt
-from jinja2 import Template
-from jwt.exceptions import InvalidTokenError
-
 from app.core import security
 from app.core.config import settings
+from jinja2 import Template
+from jwt.exceptions import InvalidTokenError
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -121,3 +120,14 @@ def verify_password_reset_token(token: str) -> str | None:
         return str(decoded_token["sub"])
     except InvalidTokenError:
         return None
+
+
+def get_initial_board() -> list[list[int]]:
+    board = [[0 for _ in range(8)] for _ in range(8)]
+
+    board[3][3] = 2  # Blanca
+    board[3][4] = 1  # Negra
+    board[4][3] = 1
+    board[4][4] = 2
+
+    return board

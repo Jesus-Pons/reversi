@@ -1,8 +1,9 @@
 import uuid
 from enum import Enum as PyEnum
-from typing import Any, List, Optional
+from typing import Annotated, Any, List, Literal, Optional, Tuple, Union
 
-from pydantic import EmailStr
+from app.utils import get_initial_board
+from pydantic import BaseModel, EmailStr
 from sqlalchemy import JSON, Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
@@ -104,6 +105,21 @@ class AIAlgorithm(str, PyEnum):
     QLEARNING = "qlearning"
 
 
+class AIHeuristic(str, PyEnum):
+    # Para AlphaBeta / Minimax
+    STATIC_WEIGHTS = "static_weights"  # Matriz fija de valores
+    MOBILITY_BASED = "mobility_based"  # Prioriza tener muchos movimientos
+    HYBRID = "hybrid"  # Mezcla de ambas
+
+    # Para MCTS
+    RANDOM_ROLLOUT = "random_rollout"  # Simulación totalmente aleatoria
+    GREEDY_ROLLOUT = "greedy_rollout"  # Simulación voraz (intenta comer mucho)
+
+    # Para Q-Learning / Neural Networks
+    LEARNED_WEIGHTS = "learned_weights"  # Usa pesos aprendidos
+    NONE = "none"  # Por si algún algoritmo no usa heurística
+
+
 class Turn(str, PyEnum):
     BLACK = "black"
     WHITE = "white"
@@ -144,10 +160,12 @@ class Game(SQLModel, table=True):
     player_white_id: uuid.UUID | None = Field(default=None, foreign_key="user.id")
     bot_white_id: uuid.UUID | None = Field(default=None, foreign_key="aiconfig.id")
 
-    board_state: List[Any] = Field(sa_column=Column(JSON))
+    board_state: List[Any] = Field(
+        default_factory=get_initial_board, sa_column=Column(JSON)
+    )
     score_black: int = Field(default=2)
     score_white: int = Field(default=2)
-    current_turn: Turn = Field(sa_column=Column(SAEnum(Turn)))
+    current_turn: Turn = Field(sa_column=Column(SAEnum(Turn)), default=Turn.BLACK)
     winner: Winner | None = Field(default=None, sa_column=Column(SAEnum(Winner)))
 
     player_black: Optional["User"] = Relationship(
@@ -182,3 +200,112 @@ class Moves(SQLModel, table=True):
     position: List[Any] | None = Field(default=None, sa_column=Column(JSON))
 
     game: Game = Relationship(back_populates="moves")
+
+
+# Pydantic Models
+
+
+class AlphaBetaParams(BaseModel):
+    depth: int = Field(..., ge=1, le=8, description="Profundidad del árbol (1-8)")
+    use_sorting: bool = Field(
+        default=True, description="Ordenar movimientos para optimizar poda"
+    )
+    time_limit_ms: int | None = Field(
+        default=1000, description="Tiempo límite por jugada"
+    )
+
+
+class MonteCarloParams(BaseModel):
+    iterations: int = Field(..., ge=100, le=10000, description="Número de simulaciones")
+    exploration_constant: float = Field(
+        default=1.41, description="Constante C de exploración"
+    )
+
+
+class QLearningParams(BaseModel):
+    learning_rate: float = Field(default=0.1, ge=0.0, le=1.0)
+    discount_factor: float = Field(default=0.9, ge=0.0, le=1.0)
+    epsilon: float = Field(
+        default=0.1, ge=0.0, le=1.0, description="Probabilidad de exploración"
+    )
+
+
+class ConfigAlphaBeta(BaseModel):
+    algorithm: Literal[AIAlgorithm.ALPHABETA]  # <--- El discriminador
+    heuristic: AIHeuristic
+    parameters: AlphaBetaParams  # <--- Obliga a usar params de AlphaBeta
+
+
+class ConfigMonteCarlo(BaseModel):
+    algorithm: Literal[AIAlgorithm.MONTECARLO]
+    heuristic: AIHeuristic
+    parameters: MonteCarloParams
+
+
+class ConfigQLearning(BaseModel):
+    algorithm: Literal[AIAlgorithm.QLEARNING]
+    heuristic: AIHeuristic
+    parameters: QLearningParams
+
+
+class ConfigRandom(BaseModel):
+    algorithm: Literal[AIAlgorithm.RANDOM]
+    heuristic: AIHeuristic = AIHeuristic.NONE  # Random suele ignorar heurística
+    parameters: dict = {}
+
+
+AIConfigInput = Annotated[
+    Union[ConfigAlphaBeta, ConfigMonteCarlo, ConfigQLearning, ConfigRandom],
+    Field(discriminator="algorithm"),
+]
+
+
+class GamesPublic(SQLModel):
+    data: list[Game]
+    count: int
+
+
+class GameCreate(BaseModel):
+    player_black_id: uuid.UUID | None = None
+    bot_black_config: AIConfigInput | None = None
+    player_white_id: uuid.UUID | None = None
+    bot_white_config: AIConfigInput | None = None
+
+
+class ValidMovesResponse(BaseModel):
+    game_id: uuid.UUID
+    current_turn: Turn
+    valid_moves: List[List[int]]
+
+
+class MoveCreate(BaseModel):
+    coordinate: List[int]
+
+
+class GamePublic(BaseModel):
+    id: uuid.UUID
+    board_state: List[Any]
+    score_black: int
+    score_white: int
+    current_turn: Turn
+    winner: Winner | None
+    # Devolvemos objetos simplificados de usuario
+    player_black: UserPublic | None
+    player_white: UserPublic | None
+    # No devolvemos toda la config de la IA, a veces solo el ID o el nombre basta
+    bot_black_id: uuid.UUID | None
+    bot_white_id: uuid.UUID | None
+
+
+class BotMoveResponse(BaseModel):
+    game: GamePublic  # El estado resultante
+    move_made: List[int] | None  # La coordenada donde movió (None si pasó turno)
+    message: str  # Ej: "AlphaBeta movió a D3 en 1.5s"
+
+
+class GameStateResult(BaseModel):
+    board_state: List[List[int]]
+    score_black: int
+    score_white: int
+    current_turn: Optional[int]  # 1, 2, o None (Game Over)
+    winner: Optional[str]  # "black", "white", "draw" o None
