@@ -11,6 +11,7 @@ from app.models import (
     BotMoveResponse,
     Game,
     GameCreate,
+    GamePublic,
     GamesPublic,
     GameStateResult,
     MoveCreate,
@@ -57,9 +58,9 @@ def read_my_games(
         select(func.count())
         .select_from(Game)
         .where(
-            (col(Game.player_black_id) == current_user.id)
-            | (col(Game.player_white_id) == current_user.id)
-            | (col(Game.owner_id) == current_user.id)
+            (Game.player_black_id == current_user.id)
+            | (Game.player_white_id == current_user.id)
+            | (Game.owner_id == current_user.id)
         )
     )
     count = session.exec(count_statement).one()
@@ -67,9 +68,9 @@ def read_my_games(
     statement = (
         select(Game)
         .where(
-            (col(Game.player_black_id) == current_user.id)
-            | (col(Game.player_white_id) == current_user.id)
-            | (col(Game.owner_id) == current_user.id)
+            (Game.player_black_id == current_user.id)
+            | (Game.player_white_id == current_user.id)
+            | (Game.owner_id == current_user.id)
         )
         .offset(skip)
         .limit(limit)
@@ -91,30 +92,38 @@ def create_game(
     game = Game(owner_id=current_user.id)
 
     if game_in.bot_black_config:
-        # Pydantic te da los datos validados y tipados.
-        # Para guardarlo en la BD (que espera un dict JSON genérico), usamos .model_dump()
-
+        final_params_black = {}
+        raw_params_black = game_in.bot_black_config.parameters
+        if hasattr(raw_params_black, "model_dump"):
+            final_params_black = raw_params_black.model_dump()
+        else:
+            final_params_black = raw_params_black
         black_bot_config = AIConfig(
             algorithm=game_in.bot_black_config.algorithm,
             heuristic=game_in.bot_black_config.heuristic,
             # ESTO ES CLAVE: Convertimos el objeto AlphaBetaParams a dict
-            parameters=game_in.bot_black_config.parameters.model_dump(),
+            parameters=final_params_black,
         )
         session.add(black_bot_config)
-        Game.bot_black = black_bot_config
+        game.bot_black = black_bot_config
     else:
-        Game.player_black_id = current_user.id
+        game.player_black_id = current_user.id
 
     if game_in.bot_white_config:
+        raw_params_white = game_in.bot_white_config.parameters
+        if hasattr(raw_params_white, "model_dump"):
+            final_params_white = raw_params_white.model_dump()
+        else:
+            final_params_white = raw_params_white
         white_bot_config = AIConfig(
             algorithm=game_in.bot_white_config.algorithm,
             heuristic=game_in.bot_white_config.heuristic,
-            parameters=game_in.bot_white_config.parameters.model_dump(),
+            parameters=final_params_white,
         )
         session.add(white_bot_config)
-        Game.bot_white = white_bot_config
+        game.bot_white = white_bot_config
     else:
-        Game.player_white_id = current_user.id
+        game.player_white_id = current_user.id
 
     session.add(game)
     session.commit()
@@ -221,10 +230,10 @@ def human_move(
     return game
 
 
-@router.post("/{game_id}/bot-move/", response_model=Game)
+@router.post("/{game_id}/bot-move/", response_model=BotMoveResponse)
 def make_bot_move(
     *, session: SessionDep, game_id: uuid.UUID, current_user: CurrentUser
-) -> Game:
+) -> BotMoveResponse:
     """
     Make a move in the game.
     """
@@ -303,7 +312,7 @@ def make_bot_move(
     session.commit()
     session.refresh(game)
     return BotMoveResponse(
-        game=game,
+        game=GamePublic.model_validate(game),
         move_made=move_coords,
         message=message,
     )

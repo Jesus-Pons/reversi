@@ -3,7 +3,7 @@ from enum import Enum as PyEnum
 from typing import Annotated, Any, List, Literal, Optional, Tuple, Union
 
 from app.utils import get_initial_board
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 from sqlalchemy import JSON, Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
@@ -284,6 +284,7 @@ class MoveCreate(BaseModel):
 
 class GamePublic(BaseModel):
     id: uuid.UUID
+    owner_id: uuid.UUID
     board_state: List[Any]
     score_black: int
     score_white: int
@@ -295,6 +296,8 @@ class GamePublic(BaseModel):
     # No devolvemos toda la config de la IA, a veces solo el ID o el nombre basta
     bot_black_id: uuid.UUID | None
     bot_white_id: uuid.UUID | None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BotMoveResponse(BaseModel):

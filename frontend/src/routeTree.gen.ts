@@ -16,8 +16,10 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
-import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
+import { Route as LayoutGamesIndexRouteImport } from './routes/_layout/games/index'
+import { Route as LayoutGamesNewRouteImport } from './routes/_layout/games/new'
+import { Route as LayoutGamesGameIdRouteImport } from './routes/_layout/games/$gameId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -53,14 +55,24 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutItemsRoute = LayoutItemsRouteImport.update({
-  id: '/items',
-  path: '/items',
-  getParentRoute: () => LayoutRoute,
-} as any)
 const LayoutAdminRoute = LayoutAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutGamesIndexRoute = LayoutGamesIndexRouteImport.update({
+  id: '/games/',
+  path: '/games/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutGamesNewRoute = LayoutGamesNewRouteImport.update({
+  id: '/games/new',
+  path: '/games/new',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutGamesGameIdRoute = LayoutGamesGameIdRouteImport.update({
+  id: '/games/$gameId',
+  path: '/games/$gameId',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -70,9 +82,11 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
-  '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
   '/': typeof LayoutIndexRoute
+  '/games/$gameId': typeof LayoutGamesGameIdRoute
+  '/games/new': typeof LayoutGamesNewRoute
+  '/games': typeof LayoutGamesIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -80,9 +94,11 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
-  '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
   '/': typeof LayoutIndexRoute
+  '/games/$gameId': typeof LayoutGamesGameIdRoute
+  '/games/new': typeof LayoutGamesNewRoute
+  '/games': typeof LayoutGamesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -92,9 +108,11 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
-  '/_layout/items': typeof LayoutItemsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/': typeof LayoutIndexRoute
+  '/_layout/games/$gameId': typeof LayoutGamesGameIdRoute
+  '/_layout/games/new': typeof LayoutGamesNewRoute
+  '/_layout/games/': typeof LayoutGamesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -104,9 +122,11 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/admin'
-    | '/items'
     | '/settings'
     | '/'
+    | '/games/$gameId'
+    | '/games/new'
+    | '/games'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -114,9 +134,11 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/admin'
-    | '/items'
     | '/settings'
     | '/'
+    | '/games/$gameId'
+    | '/games/new'
+    | '/games'
   id:
     | '__root__'
     | '/_layout'
@@ -125,9 +147,11 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/_layout/admin'
-    | '/_layout/items'
     | '/_layout/settings'
     | '/_layout/'
+    | '/_layout/games/$gameId'
+    | '/_layout/games/new'
+    | '/_layout/games/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -189,13 +213,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/items': {
-      id: '/_layout/items'
-      path: '/items'
-      fullPath: '/items'
-      preLoaderRoute: typeof LayoutItemsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
     '/_layout/admin': {
       id: '/_layout/admin'
       path: '/admin'
@@ -203,21 +220,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/games/': {
+      id: '/_layout/games/'
+      path: '/games'
+      fullPath: '/games'
+      preLoaderRoute: typeof LayoutGamesIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/games/new': {
+      id: '/_layout/games/new'
+      path: '/games/new'
+      fullPath: '/games/new'
+      preLoaderRoute: typeof LayoutGamesNewRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/games/$gameId': {
+      id: '/_layout/games/$gameId'
+      path: '/games/$gameId'
+      fullPath: '/games/$gameId'
+      preLoaderRoute: typeof LayoutGamesGameIdRouteImport
+      parentRoute: typeof LayoutRoute
+    }
   }
 }
 
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
-  LayoutItemsRoute: typeof LayoutItemsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
+  LayoutGamesGameIdRoute: typeof LayoutGamesGameIdRoute
+  LayoutGamesNewRoute: typeof LayoutGamesNewRoute
+  LayoutGamesIndexRoute: typeof LayoutGamesIndexRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
-  LayoutItemsRoute: LayoutItemsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutIndexRoute: LayoutIndexRoute,
+  LayoutGamesGameIdRoute: LayoutGamesGameIdRoute,
+  LayoutGamesNewRoute: LayoutGamesNewRoute,
+  LayoutGamesIndexRoute: LayoutGamesIndexRoute,
 }
 
 const LayoutRouteWithChildren =
