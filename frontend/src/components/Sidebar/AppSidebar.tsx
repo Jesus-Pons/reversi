@@ -1,4 +1,4 @@
-import { Briefcase, Home, Users,Gamepad2 } from "lucide-react"
+import { Home, Users,Gamepad2 } from "lucide-react"
 
 import { SidebarAppearance } from "@/components/Common/Appearance"
 import { Logo } from "@/components/Common/Logo"

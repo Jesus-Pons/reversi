@@ -110,7 +110,11 @@ function GameCard({ game }: { game: Game }) {
         </div>
       </div>
 
-      <Link to={`/games/${game.id}`} className="mt-auto">
+      <Link 
+        to="/games/$gameId" 
+        params={{ gameId: game.id! }} 
+        className="mt-auto"
+      >
         <Button className="w-full gap-2" variant={isFinished ? "secondary" : "default"}>
           <Play className="size-4" />
           {isFinished ? "Ver Resultado" : "Continuar Jugando"}

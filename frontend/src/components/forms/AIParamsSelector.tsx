@@ -101,7 +101,37 @@ export const AIParamsSelector: React.FC<AIParamsSelectorProps> = ({ onChange }) 
         </div>
       )}
       
-      {/* (Mantén el resto de inputs para montecarlo y qlearning igual que antes) */}
+      {algorithm === 'montecarlo' && (
+        <div className="flex flex-col gap-1.5 animate-fade-in">
+          <label className="text-sm font-medium text-gray-300">Iteraciones</label>
+          <input
+            type="number"
+            min="100"
+            step="100"
+            value={iterations}
+            // AQUÍ SE USA setIterations:
+            onChange={(e) => setIterations(Math.max(10, parseInt(e.target.value) || 100))}
+            className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+          />
+        </div>
+      )}
+
+      {algorithm === 'qlearning' && (
+        <div className="flex flex-col gap-1.5 animate-fade-in">
+          <label className="text-sm font-medium text-gray-300">Epsilon (Exploración)</label>
+          <input
+            type="number"
+            min="0"
+            max="1"
+            step="0.05"
+            value={epsilon}
+            // AQUÍ SE USA setEpsilon:
+            onChange={(e) => setEpsilon(Math.min(1, Math.max(0, parseFloat(e.target.value) || 0)))}
+            className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+          />
+          <span className="text-xs text-gray-500">Probabilidad de movimiento aleatorio (0.0 - 1.0).</span>
+        </div>
+      )}
     </div>
   );
 };

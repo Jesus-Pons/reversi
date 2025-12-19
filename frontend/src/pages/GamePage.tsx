@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import {useNavigate} from '@tanstack/react-router';
 import { GameBoard } from '../components/game/GameBoard';
 import { ScoreBoard } from '../components/game/ScoreBoard';
 import { StatusBanner } from '../components/game/StatusBanner';
 // Importamos el SDK y los Tipos generados
 import { GamesService } from '..//client/sdk.gen'; 
-import type { Game, Turn, Winner } from '..//client/types.gen';
+import type { Game, Winner } from '..//client/types.gen';
 
 interface GamePageProps {
   gameId: string;
@@ -17,6 +18,7 @@ export const GamePage: React.FC<GamePageProps> = ({ gameId }) => {
   const [validMoves, setValidMoves] = useState<number[][]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const navigate = useNavigate();
 
   // 1. Polling del estado usando el SDK
   const fetchGame = useCallback(async () => {
@@ -115,13 +117,17 @@ export const GamePage: React.FC<GamePageProps> = ({ gameId }) => {
   // El backend define board_state como Array<unknown>, nosotros sabemos que es number[][]
   const boardMatrix = (game.board_state as number[][]) || [];
   const currentTurn = (game.current_turn as 'black' | 'white') || 'black';
+  const displayMessage = message || (isGameOver ? null : isBotTurn ? 'Pensando...' : 'Tu turno');
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col items-center py-10 relative">
+    <div className="min-h-screen bg-gray-900 flex flex-col items-center py-6 sm:py-10 relative">
+      
+      {/* Pasamos el mensaje al ScoreBoard */}
       <ScoreBoard 
         scoreBlack={game.score_black || 0} 
         scoreWhite={game.score_white || 0} 
-        currentTurn={currentTurn} 
+        currentTurn={currentTurn}
+        message={displayMessage} 
       />
 
       <div className="relative">
@@ -132,20 +138,15 @@ export const GamePage: React.FC<GamePageProps> = ({ gameId }) => {
           disabled={!!isBotTurn || isGameOver}
         />
         
+        {/* StatusBanner ya solo se encarga del Ganador */}
         <StatusBanner 
           winner={game.winner as Winner | null} 
-          message={message || (isGameOver ? null : isBotTurn ? 'Turno de la IA' : 'Tu turno')}
-          onRestart={() => window.location.reload()}
+          onRestart={() => navigate({to: '/games/new'})}
         />
       </div>
 
       <div className="mt-8 flex gap-4">
-        <button 
-          className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold transition-colors"
-          onClick={() => window.history.back()}
-        >
-          Salir
-        </button>
+         {/* ... botones de salir ... */}
       </div>
     </div>
   );
