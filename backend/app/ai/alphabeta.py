@@ -55,7 +55,7 @@ def _minimax(board, depth, alpha, beta, is_maximizing, my_player_id):
     valid_moves = logic.get_valid_moves(board, current_player)
 
     # --- CASO BASE ---
-    if depth == 0 or not valid_moves:
+    if depth <= 0 or not valid_moves:
         if not valid_moves:
             # Chequear si es FIN DE PARTIDA real (ninguno mueve)
             if not logic.get_valid_moves(board, 3 - current_player):

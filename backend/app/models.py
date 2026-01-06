@@ -1,3 +1,4 @@
+import time
 import uuid
 from enum import Enum as PyEnum
 from typing import Annotated, Any, List, Literal, Optional, Tuple, Union
@@ -60,6 +61,9 @@ class User(UserBase, table=True):
         back_populates="owner",
         cascade_delete=True,
         sa_relationship_kwargs={"foreign_keys": "Game.owner_id"},
+    )
+    simulations: list["Simulation"] = Relationship(
+        back_populates="user", cascade_delete=True
     )
 
 
@@ -148,6 +152,14 @@ class AIConfig(SQLModel, table=True):
         back_populates="bot_white",
         sa_relationship_kwargs={"foreign_keys": "Game.bot_white_id"},
     )
+    simulations_as_black: list["Simulation"] = Relationship(
+        back_populates="bot_black",
+        sa_relationship_kwargs={"foreign_keys": "Simulation.bot_black_id"},
+    )
+    simulations_as_white: list["Simulation"] = Relationship(
+        back_populates="bot_white",
+        sa_relationship_kwargs={"foreign_keys": "Simulation.bot_white_id"},
+    )
 
 
 class Game(SQLModel, table=True):
@@ -200,6 +212,35 @@ class Moves(SQLModel, table=True):
     position: List[Any] | None = Field(default=None, sa_column=Column(JSON))
 
     game: Game = Relationship(back_populates="moves")
+
+
+class Simulation(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: float = Field(default_factory=time.time)
+
+    # Inputs guardados
+    num_games: int
+    user_id: uuid.UUID = Field(foreign_key="user.id", ondelete="CASCADE")
+    bot_black_id: uuid.UUID = Field(foreign_key="aiconfig.id")
+    bot_white_id: uuid.UUID = Field(foreign_key="aiconfig.id")
+
+    # Resultados
+    black_wins: int
+    white_wins: int
+    draws: int
+    time_elapsed: float
+
+    # Relaciones
+    user: "User" = Relationship(back_populates="simulations")
+    bot_black: "AIConfig" = Relationship(
+        back_populates="simulations_as_black",  # <--- Coincide con AIConfig
+        sa_relationship_kwargs={"foreign_keys": "Simulation.bot_black_id"},
+    )
+
+    bot_white: "AIConfig" = Relationship(
+        back_populates="simulations_as_white",  # <--- Coincide con AIConfig
+        sa_relationship_kwargs={"foreign_keys": "Simulation.bot_white_id"},
+    )
 
 
 # Pydantic Models
@@ -315,3 +356,17 @@ class GameStateResult(BaseModel):
     score_white: int
     current_turn: Optional[int]  # 1, 2, o None (Game Over)
     winner: Optional[str]  # "black", "white", "draw" o None
+
+
+class SimulationRequest(BaseModel):
+    num_games: int = Field(default=100, ge=1, le=1000)
+    bot_black: AIConfigInput
+    bot_white: AIConfigInput
+
+
+class SimulationResult(BaseModel):
+    total_games: int
+    black_wins: int
+    white_wins: int
+    draws: int
+    time_elapsed: float

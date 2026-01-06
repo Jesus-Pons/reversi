@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { GamesReadGamesData, GamesReadGamesResponse, GamesCreateGameData, GamesCreateGameResponse, GamesReadMyGamesData, GamesReadMyGamesResponse, GamesGetGameByIdData, GamesGetGameByIdResponse, GamesGetValidMovesData, GamesGetValidMovesResponse, GamesHumanMoveData, GamesHumanMoveResponse, GamesMakeBotMoveData, GamesMakeBotMoveResponse, GamesGetGameHistoryData, GamesGetGameHistoryResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { GamesReadGamesData, GamesReadGamesResponse, GamesCreateGameData, GamesCreateGameResponse, GamesReadMyGamesData, GamesReadMyGamesResponse, GamesGetGameByIdData, GamesGetGameByIdResponse, GamesGetValidMovesData, GamesGetValidMovesResponse, GamesHumanMoveData, GamesHumanMoveResponse, GamesMakeBotMoveData, GamesMakeBotMoveResponse, GamesGetGameHistoryData, GamesGetGameHistoryResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SimulationRunSimulationData, SimulationRunSimulationResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class GamesService {
     /**
@@ -143,7 +143,7 @@ export class GamesService {
      * Make a move in the game.
      * @param data The data for the request.
      * @param data.gameId
-     * @returns Game Successful Response
+     * @returns BotMoveResponse Successful Response
      * @throws ApiError
      */
     public static makeBotMove(data: GamesMakeBotMoveData): CancelablePromise<GamesMakeBotMoveResponse> {
@@ -291,6 +291,28 @@ export class PrivateService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/private/users/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class SimulationService {
+    /**
+     * Run Simulation
+     * Ejecuta una simulación masiva y guarda los resultados en la BD.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns Simulation Successful Response
+     * @throws ApiError
+     */
+    public static runSimulation(data: SimulationRunSimulationData): CancelablePromise<SimulationRunSimulationResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/simulation/',
             body: data.requestBody,
             mediaType: 'application/json',
             errors: {

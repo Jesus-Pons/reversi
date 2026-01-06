@@ -26,6 +26,12 @@ export type Body_login_login_access_token = {
     client_secret?: (string | null);
 };
 
+export type BotMoveResponse = {
+    game: GamePublic;
+    move_made: (Array<(number)> | null);
+    message: string;
+};
+
 export type ConfigAlphaBeta = {
     algorithm: "alphabeta";
     heuristic: AIHeuristic;
@@ -73,6 +79,20 @@ export type GameCreate = {
     bot_white_config?: ((ConfigAlphaBeta | ConfigMonteCarlo | ConfigQLearning | ConfigRandom) | null);
 };
 
+export type GamePublic = {
+    id: string;
+    owner_id: string;
+    board_state: Array<unknown>;
+    score_black: number;
+    score_white: number;
+    current_turn: Turn;
+    winner: (Winner | null);
+    player_black: (UserPublic | null);
+    player_white: (UserPublic | null);
+    bot_black_id: (string | null);
+    bot_white_id: (string | null);
+};
+
 export type GamesPublic = {
     data: Array<Game>;
     count: number;
@@ -95,6 +115,10 @@ export type MonteCarloParams = {
      * Constante C de exploración
      */
     exploration_constant?: number;
+    /**
+     * Tiempo límite en segundos
+     */
+    time_limit?: number;
 };
 
 export type MoveCreate = {
@@ -128,6 +152,25 @@ export type QLearningParams = {
      * Probabilidad de exploración
      */
     epsilon?: number;
+};
+
+export type Simulation = {
+    id?: string;
+    created_at?: number;
+    num_games: number;
+    user_id: string;
+    bot_black_id: string;
+    bot_white_id: string;
+    black_wins: number;
+    white_wins: number;
+    draws: number;
+    time_elapsed: number;
+};
+
+export type SimulationRequest = {
+    num_games?: number;
+    bot_black: (ConfigAlphaBeta | ConfigMonteCarlo | ConfigQLearning | ConfigRandom);
+    bot_white: (ConfigAlphaBeta | ConfigMonteCarlo | ConfigQLearning | ConfigRandom);
 };
 
 export type Token = {
@@ -239,7 +282,7 @@ export type GamesMakeBotMoveData = {
     gameId: string;
 };
 
-export type GamesMakeBotMoveResponse = (Game);
+export type GamesMakeBotMoveResponse = (BotMoveResponse);
 
 export type GamesGetGameHistoryData = {
     gameId: string;
@@ -278,6 +321,12 @@ export type PrivateCreateUserData = {
 };
 
 export type PrivateCreateUserResponse = (UserPublic);
+
+export type SimulationRunSimulationData = {
+    requestBody: SimulationRequest;
+};
+
+export type SimulationRunSimulationResponse = (Simulation);
 
 export type UsersReadUsersData = {
     limit?: number;

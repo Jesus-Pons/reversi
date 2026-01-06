@@ -95,6 +95,35 @@ export const Body_login_login_access_tokenSchema = {
     title: 'Body_login-login_access_token'
 } as const;
 
+export const BotMoveResponseSchema = {
+    properties: {
+        game: {
+            '$ref': '#/components/schemas/GamePublic'
+        },
+        move_made: {
+            anyOf: [
+                {
+                    items: {
+                        type: 'integer'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Move Made'
+        },
+        message: {
+            type: 'string',
+            title: 'Message'
+        }
+    },
+    type: 'object',
+    required: ['game', 'move_made', 'message'],
+    title: 'BotMoveResponse'
+} as const;
+
 export const ConfigAlphaBetaSchema = {
     properties: {
         algorithm: {
@@ -367,6 +396,94 @@ export const GameCreateSchema = {
     title: 'GameCreate'
 } as const;
 
+export const GamePublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        owner_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Owner Id'
+        },
+        board_state: {
+            items: {},
+            type: 'array',
+            title: 'Board State'
+        },
+        score_black: {
+            type: 'integer',
+            title: 'Score Black'
+        },
+        score_white: {
+            type: 'integer',
+            title: 'Score White'
+        },
+        current_turn: {
+            '$ref': '#/components/schemas/Turn'
+        },
+        winner: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/Winner'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        player_black: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/UserPublic'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        player_white: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/UserPublic'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        bot_black_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Bot Black Id'
+        },
+        bot_white_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Bot White Id'
+        }
+    },
+    type: 'object',
+    required: ['id', 'owner_id', 'board_state', 'score_black', 'score_white', 'current_turn', 'winner', 'player_black', 'player_white', 'bot_black_id', 'bot_white_id'],
+    title: 'GamePublic'
+} as const;
+
 export const GamesPublicSchema = {
     properties: {
         data: {
@@ -426,6 +543,14 @@ export const MonteCarloParamsSchema = {
             title: 'Exploration Constant',
             description: 'Constante C de exploración',
             default: 1.41
+        },
+        time_limit: {
+            type: 'number',
+            maximum: 120,
+            minimum: 0.1,
+            title: 'Time Limit',
+            description: 'Tiempo límite en segundos',
+            default: 4.5
         }
     },
     type: 'object',
@@ -555,6 +680,125 @@ export const QLearningParamsSchema = {
     },
     type: 'object',
     title: 'QLearningParams'
+} as const;
+
+export const SimulationSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        created_at: {
+            type: 'number',
+            title: 'Created At'
+        },
+        num_games: {
+            type: 'integer',
+            title: 'Num Games'
+        },
+        user_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'User Id'
+        },
+        bot_black_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Bot Black Id'
+        },
+        bot_white_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Bot White Id'
+        },
+        black_wins: {
+            type: 'integer',
+            title: 'Black Wins'
+        },
+        white_wins: {
+            type: 'integer',
+            title: 'White Wins'
+        },
+        draws: {
+            type: 'integer',
+            title: 'Draws'
+        },
+        time_elapsed: {
+            type: 'number',
+            title: 'Time Elapsed'
+        }
+    },
+    type: 'object',
+    required: ['num_games', 'user_id', 'bot_black_id', 'bot_white_id', 'black_wins', 'white_wins', 'draws', 'time_elapsed'],
+    title: 'Simulation'
+} as const;
+
+export const SimulationRequestSchema = {
+    properties: {
+        num_games: {
+            type: 'integer',
+            maximum: 1000,
+            minimum: 1,
+            title: 'Num Games',
+            default: 100
+        },
+        bot_black: {
+            oneOf: [
+                {
+                    '$ref': '#/components/schemas/ConfigAlphaBeta'
+                },
+                {
+                    '$ref': '#/components/schemas/ConfigMonteCarlo'
+                },
+                {
+                    '$ref': '#/components/schemas/ConfigQLearning'
+                },
+                {
+                    '$ref': '#/components/schemas/ConfigRandom'
+                }
+            ],
+            title: 'Bot Black',
+            discriminator: {
+                propertyName: 'algorithm',
+                mapping: {
+                    alphabeta: '#/components/schemas/ConfigAlphaBeta',
+                    montecarlo: '#/components/schemas/ConfigMonteCarlo',
+                    qlearning: '#/components/schemas/ConfigQLearning',
+                    random: '#/components/schemas/ConfigRandom'
+                }
+            }
+        },
+        bot_white: {
+            oneOf: [
+                {
+                    '$ref': '#/components/schemas/ConfigAlphaBeta'
+                },
+                {
+                    '$ref': '#/components/schemas/ConfigMonteCarlo'
+                },
+                {
+                    '$ref': '#/components/schemas/ConfigQLearning'
+                },
+                {
+                    '$ref': '#/components/schemas/ConfigRandom'
+                }
+            ],
+            title: 'Bot White',
+            discriminator: {
+                propertyName: 'algorithm',
+                mapping: {
+                    alphabeta: '#/components/schemas/ConfigAlphaBeta',
+                    montecarlo: '#/components/schemas/ConfigMonteCarlo',
+                    qlearning: '#/components/schemas/ConfigQLearning',
+                    random: '#/components/schemas/ConfigRandom'
+                }
+            }
+        }
+    },
+    type: 'object',
+    required: ['bot_black', 'bot_white'],
+    title: 'SimulationRequest'
 } as const;
 
 export const TokenSchema = {
