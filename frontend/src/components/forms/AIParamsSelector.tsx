@@ -12,6 +12,7 @@ export interface AIConfigInput {
   depth?: number;
   iterations?: number;
   epsilon?: number;
+  time_limit?: number;
 }
 
 interface AIParamsSelectorProps {
@@ -26,6 +27,7 @@ export const AIParamsSelector: React.FC<AIParamsSelectorProps> = ({ onChange }) 
   // Parámetros
   const [depth, setDepth] = useState<number>(4);
   const [iterations, setIterations] = useState<number>(1000);
+  const [timeLimit, setTimeLimit] = useState<number>(4.5);
   const [epsilon, setEpsilon] = useState<number>(0.1);
 
   useEffect(() => {
@@ -40,12 +42,13 @@ export const AIParamsSelector: React.FC<AIParamsSelectorProps> = ({ onChange }) 
       config.depth = depth;
     } else if (algorithm === 'montecarlo') {
       config.iterations = iterations;
+      config.time_limit = timeLimit;
     } else if (algorithm === 'qlearning') {
       config.epsilon = epsilon;
     }
 
     onChange(config);
-  }, [algorithm, heuristic, depth, iterations, epsilon, onChange]);
+  }, [algorithm, heuristic, depth, iterations, epsilon, onChange, timeLimit]);
 
   return (
     <div className="flex flex-col gap-4 p-5 bg-gray-800 rounded-xl border border-gray-700 shadow-lg text-white w-full max-w-md">
@@ -102,6 +105,7 @@ export const AIParamsSelector: React.FC<AIParamsSelectorProps> = ({ onChange }) 
       )}
       
       {algorithm === 'montecarlo' && (
+        <>
         <div className="flex flex-col gap-1.5 animate-fade-in">
           <label className="text-sm font-medium text-gray-300">Iteraciones</label>
           <input
@@ -114,6 +118,20 @@ export const AIParamsSelector: React.FC<AIParamsSelectorProps> = ({ onChange }) 
             className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
           />
         </div>
+        <div className="flex flex-col gap-1.5 animate-fade-in mt-2">
+            <label className="text-sm font-medium text-gray-300">Tiempo Límite (segundos)</label>
+            <input
+              type="number"
+              min="0.1"
+              max="30"
+              step="0.5"
+              value={timeLimit}
+              onChange={(e) => setTimeLimit(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+              className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+            />
+            <span className="text-xs text-gray-500">Se detendrá si se agota el tiempo, aunque falten iteraciones.</span>
+        </div>
+        </>
       )}
 
       {algorithm === 'qlearning' && (

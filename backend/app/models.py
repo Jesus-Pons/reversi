@@ -220,6 +220,9 @@ class MonteCarloParams(BaseModel):
     exploration_constant: float = Field(
         default=1.41, description="Constante C de exploración"
     )
+    time_limit: float = Field(
+        default=4.5, ge=0.1, le=120.0, description="Tiempo límite en segundos"
+    )
 
 
 class QLearningParams(BaseModel):
