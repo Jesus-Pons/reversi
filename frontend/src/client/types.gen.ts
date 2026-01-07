@@ -349,18 +349,18 @@ export type PrivateCreateUserData = {
 
 export type PrivateCreateUserResponse = (UserPublic);
 
+export type SimulationRunSimulationData = {
+    requestBody: SimulationRequest;
+};
+
+export type SimulationRunSimulationResponse = (Simulation);
+
 export type SimulationReadSimulationsData = {
     limit?: number;
     skip?: number;
 };
 
 export type SimulationReadSimulationsResponse = (SimulationsPublic);
-
-export type SimulationRunSimulationData = {
-    requestBody: SimulationRequest;
-};
-
-export type SimulationRunSimulationResponse = (Simulation);
 
 export type UsersReadUsersData = {
     limit?: number;
