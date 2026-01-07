@@ -20,6 +20,10 @@ export const AIConfigSchema = {
             additionalProperties: true,
             type: 'object',
             title: 'Parameters'
+        },
+        heuristic: {
+            '$ref': '#/components/schemas/AIHeuristic',
+            default: 'none'
         }
     },
     type: 'object',
@@ -561,7 +565,7 @@ export const MonteCarloParamsSchema = {
         iterations: {
             type: 'integer',
             maximum: 10000,
-            minimum: 100,
+            minimum: 10,
             title: 'Iterations',
             description: 'Número de simulaciones'
         },

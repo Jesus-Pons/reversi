@@ -8,6 +8,7 @@ export type AIConfig = {
     parameters: {
         [key: string]: unknown;
     };
+    heuristic?: AIHeuristic;
 };
 
 export type AIHeuristic = 'static_weights' | 'mobility_based' | 'hybrid' | 'none';

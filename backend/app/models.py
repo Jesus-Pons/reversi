@@ -135,6 +135,12 @@ class AIConfig(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     algorithm: AIAlgorithm = Field(sa_column=Column(SAEnum(AIAlgorithm)))
     parameters: dict = Field(sa_column=Column(JSON))
+    heuristic: AIHeuristic = Field(
+        sa_column=Column(
+            SAEnum(AIHeuristic, values_callable=lambda x: [e.value for e in x])
+        ),
+        default=AIHeuristic.NONE,
+    )
 
     # Relaciones
     config_games_as_black: list["Game"] = Relationship(
@@ -250,7 +256,7 @@ class AlphaBetaParams(BaseModel):
 
 
 class MonteCarloParams(BaseModel):
-    iterations: int = Field(..., ge=100, le=10000, description="Número de simulaciones")
+    iterations: int = Field(..., ge=10, le=10000, description="Número de simulaciones")
     exploration_constant: float = Field(
         default=1.41, description="Constante C de exploración"
     )
