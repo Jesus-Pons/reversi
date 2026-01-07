@@ -1,19 +1,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import {useNavigate} from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { GameBoard } from '../components/game/GameBoard';
 import { ScoreBoard } from '../components/game/ScoreBoard';
 import { StatusBanner } from '../components/game/StatusBanner';
 // Importamos el SDK y los Tipos generados
-import { GamesService } from '..//client/sdk.gen'; 
-import type { Game, Winner } from '..//client/types.gen';
+import { GamesService } from '../client/sdk.gen'; 
+import type { Game, Winner } from '../client/types.gen';
 
 interface GamePageProps {
   gameId: string;
 }
 
 export const GamePage: React.FC<GamePageProps> = ({ gameId }) => {
-  // Nota: Si usas TanStack Router, usa useParams(). Aquí mantenemos tu lógica simple por ahora.
-  // const gameId = window.location.pathname.split('/').pop();
   const [game, setGame] = useState<Game | null>(null);
   const [validMoves, setValidMoves] = useState<number[][]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -33,16 +31,17 @@ export const GamePage: React.FC<GamePageProps> = ({ gameId }) => {
 
   useEffect(() => {
     fetchGame();
-    const intervalId = setInterval(fetchGame, 2000);
+    // Reducimos un poco el polling para que se sienta más vivo (1s en vez de 2s)
+    const intervalId = setInterval(fetchGame, 1000); 
     return () => clearInterval(intervalId);
   }, [fetchGame]);
 
-  // Helper para saber si hay ganador (game.winner puede ser null)
+  // Helper para saber si hay ganador
   const isGameOver = !!game?.winner;
 
   // Helper para saber si es turno de Bot
   const isBotTurn = game && !isGameOver && (
-    (game.current_turn === 'black' && !game.player_black_id) || // Si no hay ID de humano, es bot
+    (game.current_turn === 'black' && !game.player_black_id) || 
     (game.current_turn === 'white' && !game.player_white_id)
   );
 
@@ -56,7 +55,6 @@ export const GamePage: React.FC<GamePageProps> = ({ gameId }) => {
     const fetchValidMoves = async () => {
       try {
         const response = await GamesService.getValidMoves({ gameId });
-        // El SDK devuelve valid_moves como number[][]
         setValidMoves(response.valid_moves);
       } catch (error) {
         console.error('Error fetching valid moves:', error);
@@ -64,23 +62,27 @@ export const GamePage: React.FC<GamePageProps> = ({ gameId }) => {
     };
 
     fetchValidMoves();
-  }, [game?.current_turn, gameId, isBotTurn, isGameOver]);
+  }, [game?.current_turn, gameId, isBotTurn, isGameOver]); 
+  // Nota: Aquí está bien dejar current_turn, solo queremos recalcular valid moves si cambia el turno
 
-  // 3. Efecto para Bot
+  // 3. Efecto para Bot (CORREGIDO)
   useEffect(() => {
+    // Si no hay juego, o terminó, o NO es turno del bot, o YA está pensando... paramos.
     if (!game || isGameOver || !isBotTurn || isProcessing || !gameId) return;
 
     const triggerBotMove = async () => {
       setIsProcessing(true);
-      setMessage(`Pensando (${game.current_turn})...`);
+      setMessage(`Pensando (${game.current_turn === 'black' ? 'Negras' : 'Blancas'})...`);
+      
       try {
-        // Pequeño delay visual
+        // Pequeño delay para que el usuario vea qué pasó antes de que el bot mueva de nuevo
         await new Promise(resolve => setTimeout(resolve, 800));
         
         await GamesService.makeBotMove({ gameId });
         
+        // Inmediatamente pedimos el estado nuevo tras el movimiento
+        await fetchGame(); 
         setMessage(null);
-        fetchGame(); 
       } catch (error) {
         console.error('Error triggering bot move:', error);
       } finally {
@@ -89,14 +91,18 @@ export const GamePage: React.FC<GamePageProps> = ({ gameId }) => {
     };
 
     triggerBotMove();
-  }, [game?.current_turn, isBotTurn, gameId, fetchGame, isGameOver]);
+
+  // CAMBIO CLAVE AQUÍ ABAJO:
+  // Antes tenías: [game?.current_turn, ...] 
+  // Ahora usamos: [game, ...] (o game.board_state)
+  // Esto asegura que si el tablero cambia pero el turno sigue siendo el mismo (pase), el bot vuelve a activarse.
+  }, [game, isBotTurn, gameId, fetchGame, isGameOver, isProcessing]);
 
   // 4. Manejar click humano
   const handleCellClick = async (row: number, col: number) => {
     if (!game || isBotTurn || isGameOver || !gameId) return;
 
     try {
-      // CORRECCIÓN IMPORTANTE: El payload debe ser { coordinate: [row, col] }
       await GamesService.humanMove({
         gameId,
         requestBody: {
@@ -111,18 +117,15 @@ export const GamePage: React.FC<GamePageProps> = ({ gameId }) => {
     }
   };
 
-  if (!game) return <div className="text-white text-center mt-10">Cargando partida...</div>;
+  if (!game) return <div className="text-white text-center mt-10 animate-pulse">Cargando partida...</div>;
 
-  // Casteo seguro de tipos para los componentes visuales
-  // El backend define board_state como Array<unknown>, nosotros sabemos que es number[][]
   const boardMatrix = (game.board_state as number[][]) || [];
   const currentTurn = (game.current_turn as 'black' | 'white') || 'black';
-  const displayMessage = message || (isGameOver ? null : isBotTurn ? 'Pensando...' : 'Tu turno');
+  const displayMessage = message || (isGameOver ? null : isBotTurn ? 'Esperando a la IA...' : 'Tu turno');
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col items-center py-6 sm:py-10 relative">
       
-      {/* Pasamos el mensaje al ScoreBoard */}
       <ScoreBoard 
         scoreBlack={game.score_black || 0} 
         scoreWhite={game.score_white || 0} 
@@ -138,15 +141,10 @@ export const GamePage: React.FC<GamePageProps> = ({ gameId }) => {
           disabled={!!isBotTurn || isGameOver}
         />
         
-        {/* StatusBanner ya solo se encarga del Ganador */}
         <StatusBanner 
           winner={game.winner as Winner | null} 
           onRestart={() => navigate({to: '/games/new'})}
         />
-      </div>
-
-      <div className="mt-8 flex gap-4">
-         {/* ... botones de salir ... */}
       </div>
     </div>
   );
