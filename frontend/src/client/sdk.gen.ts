@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { GamesReadGamesData, GamesReadGamesResponse, GamesCreateGameData, GamesCreateGameResponse, GamesReadMyGamesData, GamesReadMyGamesResponse, GamesGetGameByIdData, GamesGetGameByIdResponse, GamesGetValidMovesData, GamesGetValidMovesResponse, GamesHumanMoveData, GamesHumanMoveResponse, GamesMakeBotMoveData, GamesMakeBotMoveResponse, GamesGetGameHistoryData, GamesGetGameHistoryResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SimulationRunSimulationData, SimulationRunSimulationResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { GamesReadGamesData, GamesReadGamesResponse, GamesCreateGameData, GamesCreateGameResponse, GamesReadMyGamesData, GamesReadMyGamesResponse, GamesGetGameByIdData, GamesGetGameByIdResponse, GamesGetValidMovesData, GamesGetValidMovesResponse, GamesHumanMoveData, GamesHumanMoveResponse, GamesMakeBotMoveData, GamesMakeBotMoveResponse, GamesGetGameHistoryData, GamesGetGameHistoryResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SimulationReadSimulationsData, SimulationReadSimulationsResponse, SimulationRunSimulationData, SimulationRunSimulationResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class GamesService {
     /**
@@ -301,6 +301,29 @@ export class PrivateService {
 }
 
 export class SimulationService {
+    /**
+     * Read Simulations
+     * Recuperar historial de simulaciones con los detalles de los bots cargados.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns SimulationsPublic Successful Response
+     * @throws ApiError
+     */
+    public static readSimulations(data: SimulationReadSimulationsData = {}): CancelablePromise<SimulationReadSimulationsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/simulation/',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
     /**
      * Run Simulation
      * Ejecuta una simulación masiva y guarda los resultados en la BD.

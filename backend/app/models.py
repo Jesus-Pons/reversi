@@ -370,3 +370,22 @@ class SimulationResult(BaseModel):
     white_wins: int
     draws: int
     time_elapsed: float
+
+
+class SimulationPublic(SQLModel):
+    id: uuid.UUID
+    created_at: float
+    num_games: int
+
+    black_wins: int
+    white_wins: int
+    draws: int
+    time_elapsed: float
+
+    bot_black: AIConfig
+    bot_white: AIConfig
+
+
+class SimulationsPublic(SQLModel):
+    data: list[SimulationPublic]
+    count: int

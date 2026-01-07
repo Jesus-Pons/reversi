@@ -1,17 +1,26 @@
 import random
 import time
 import uuid
+from typing import Any
 
 from app import logic
 from app.ai import alphabeta, montecarlo, qlearning
 
 # Asegúrate de importar tus modelos y dependencias correctamente
 from app.api.deps import CurrentUser, SessionDep
-from app.models import AIAlgorithm, AIConfig, Simulation, SimulationRequest, Turn
+from app.models import (
+    AIAlgorithm,
+    AIConfig,
+    Simulation,
+    SimulationRequest,
+    SimulationsPublic,
+)
 
 # Importa get_initial_board de utils o donde lo tengas
 from app.utils import get_initial_board
 from fastapi import APIRouter
+from sqlalchemy.orm import selectinload
+from sqlmodel import func, select
 
 router = APIRouter(prefix="/simulation", tags=["simulation"])
 
@@ -38,6 +47,34 @@ def get_ai_move(board, player, config):
         # Fallback o QLearning
         valid = logic.get_valid_moves(board, player)
         return random.choice(valid) if valid else None
+
+
+@router.get("/", response_model=SimulationsPublic)
+def read_simulations(
+    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+) -> Any:
+    """
+    Recuperar historial de simulaciones con los detalles de los bots cargados.
+    """
+    count_statement = (
+        select(func.count())
+        .select_from(Simulation)
+        .where(Simulation.user_id == current_user.id)
+    )
+    count = session.exec(count_statement).one()
+
+    statement = (
+        select(Simulation)
+        .where(Simulation.user_id == current_user.id)
+        # AÑADIR ESTAS LÍNEAS PARA CARGAR LAS RELACIONES
+        .options(selectinload(Simulation.bot_black), selectinload(Simulation.bot_white))
+        .order_by(Simulation.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    simulations = session.exec(statement).all()
+
+    return SimulationsPublic(data=simulations, count=count)
 
 
 @router.post("/", response_model=Simulation)
