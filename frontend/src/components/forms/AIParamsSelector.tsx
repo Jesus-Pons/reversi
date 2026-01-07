@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from 'react';
-// Importamos tipos del SDK si es necesario, o los definimos localmente alineados
 import type { AIHeuristic } from '../../client/types.gen';
 
-// Usamos strings literales que coincidan con el backend
 export type AlgorithmType = 'random' | 'alphabeta' | 'montecarlo' | 'qlearning';
 
 export interface AIConfigInput {
   algorithm: AlgorithmType;
-  heuristic?: AIHeuristic; // Usamos el tipo del SDK
-  // Parametros sueltos que luego se agruparán
+  heuristic?: AIHeuristic | 'none'; // Permitimos 'none' explícitamente en el tipo local
   depth?: number;
   iterations?: number;
-  epsilon?: number;
   time_limit?: number;
+  epsilon?: number;
 }
 
 interface AIParamsSelectorProps {
@@ -20,24 +17,34 @@ interface AIParamsSelectorProps {
 }
 
 export const AIParamsSelector: React.FC<AIParamsSelectorProps> = ({ onChange }) => {
-  // Por defecto alphabeta
   const [algorithm, setAlgorithm] = useState<AlgorithmType>('alphabeta');
-  const [heuristic, setHeuristic] = useState<AIHeuristic>('static_weights');
+  // Usamos un estado intermedio que permita 'none'
+  const [heuristic, setHeuristic] = useState<string>('static_weights');
   
-  // Parámetros
   const [depth, setDepth] = useState<number>(4);
   const [iterations, setIterations] = useState<number>(1000);
   const [timeLimit, setTimeLimit] = useState<number>(4.5);
   const [epsilon, setEpsilon] = useState<number>(0.1);
 
+  // --- LÓGICA DE CORRECCIÓN AUTOMÁTICA ---
+  const handleAlgorithmChange = (newAlgo: AlgorithmType) => {
+    setAlgorithm(newAlgo);
+
+    // Si cambiamos a AlphaBeta y teníamos "none", forzamos una válida
+    if (newAlgo === 'alphabeta' && heuristic === 'none') {
+      setHeuristic('static_weights');
+    }
+    // Si cambiamos a Random, la heurística da igual (se ignora)
+  };
+
   useEffect(() => {
-    // Construimos el objeto base
+    // Construir objeto de configuración
     const config: AIConfigInput = {
       algorithm,
-      heuristic: algorithm !== 'random' ? heuristic : 'none',
+      // Si es random, mandamos 'none'. Si no, lo que haya en el estado.
+      heuristic: algorithm === 'random' ? 'none' : (heuristic as AIHeuristic),
     };
 
-    // Asignamos solo las props relevantes según el algoritmo
     if (algorithm === 'alphabeta') {
       config.depth = depth;
     } else if (algorithm === 'montecarlo') {
@@ -48,20 +55,17 @@ export const AIParamsSelector: React.FC<AIParamsSelectorProps> = ({ onChange }) 
     }
 
     onChange(config);
-  }, [algorithm, heuristic, depth, iterations, epsilon, onChange, timeLimit]);
+  }, [algorithm, heuristic, depth, iterations, timeLimit, epsilon, onChange]);
 
   return (
     <div className="flex flex-col gap-4 p-5 bg-gray-800 rounded-xl border border-gray-700 shadow-lg text-white w-full max-w-md">
-      <h3 className="text-lg font-bold text-amber-400 border-b border-gray-700 pb-2 mb-1">
-        Configuración del Bot
-      </h3>
       
-      {/* Selector de Algoritmo - VALUES CORREGIDOS */}
+      {/* SELECCIÓN DE ALGORITMO */}
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-gray-300">Algoritmo</label>
         <select
           value={algorithm}
-          onChange={(e) => setAlgorithm(e.target.value as AlgorithmType)}
+          onChange={(e) => handleAlgorithmChange(e.target.value as AlgorithmType)}
           className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
         >
           <option value="random">Aleatorio (Random)</option>
@@ -71,27 +75,49 @@ export const AIParamsSelector: React.FC<AIParamsSelectorProps> = ({ onChange }) 
         </select>
       </div>
 
-      {/* Selector de Heurística - VALUES CORREGIDOS según types.gen.ts */}
+      {/* SELECCIÓN DE HEURÍSTICA (Oculto para Random) */}
       {algorithm !== 'random' && (
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-gray-300">Heurística</label>
+        <div className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-1">
+          <label className="text-sm font-medium text-gray-300">
+            {algorithm === 'montecarlo' ? 'Estrategia de Simulación' : 'Función de Evaluación'}
+          </label>
           <select
             value={heuristic}
-            onChange={(e) => setHeuristic(e.target.value as AIHeuristic)}
+            onChange={(e) => setHeuristic(e.target.value)}
             className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
           >
-            <option value="static_weights">Pesos Estáticos</option>
-            <option value="mobility_based">Basada en Movilidad</option>
-            <option value="hybrid">Híbrida</option>
-            <option value="greedy_rollout">Greedy Rollout (MCTS)</option>
-            <option value="random_rollout">Random Rollout (MCTS)</option>
+            {/* OPCIÓN ESPECIAL: SOLO PARA MONTE CARLO */}
+            {algorithm === 'montecarlo' && (
+              <option value="none" className="text-amber-300">
+                Aleatoria (Random Rollout) - Rápida
+              </option>
+            )}
+
+            {/* OPCIONES COMUNES (Válidas para AlphaBeta y MCTS Guiado) */}
+            <option value="static_weights">Mapa de Calor (Posicional)</option>
+            <option value="mobility_based">Movilidad (Libertad)</option>
+            <option value="hybrid">Híbrida (Posición + Movilidad)</option>
           </select>
+
+          {/* MENSAJES DE AYUDA CONTEXTUALES */}
+          {algorithm === 'montecarlo' && heuristic === 'none' && (
+            <p className="text-xs text-amber-400/80 mt-1">
+              Simula partidas jugando fichas al azar. Muy rápido, muchas iteraciones, pero no inteligente.
+            </p>
+          )}
+          {algorithm === 'montecarlo' && heuristic !== 'none' && (
+            <p className="text-xs text-blue-400/80 mt-1">
+              Simula partidas eligiendo inteligentemente. Mejor calidad, más lento.
+            </p>
+          )}
         </div>
       )}
 
-      {/* ... (Los inputs numéricos estaban bien, se mantienen igual) ... */}
+      {/* PARÁMETROS ESPECÍFICOS */}
+      
+      {/* Alpha Beta Params */}
       {algorithm === 'alphabeta' && (
-        <div className="flex flex-col gap-1.5 animate-fade-in">
+        <div className="flex flex-col gap-1.5 animate-in fade-in">
           <label className="text-sm font-medium text-gray-300">Profundidad (Depth)</label>
           <input
             type="number"
@@ -104,22 +130,22 @@ export const AIParamsSelector: React.FC<AIParamsSelectorProps> = ({ onChange }) 
         </div>
       )}
       
+      {/* Monte Carlo Params */}
       {algorithm === 'montecarlo' && (
-        <>
-        <div className="flex flex-col gap-1.5 animate-fade-in">
-          <label className="text-sm font-medium text-gray-300">Iteraciones</label>
-          <input
-            type="number"
-            min="100"
-            step="100"
-            value={iterations}
-            // AQUÍ SE USA setIterations:
-            onChange={(e) => setIterations(Math.max(10, parseInt(e.target.value) || 100))}
-            className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-          />
-        </div>
-        <div className="flex flex-col gap-1.5 animate-fade-in mt-2">
-            <label className="text-sm font-medium text-gray-300">Tiempo Límite (segundos)</label>
+        <div className="grid grid-cols-2 gap-4 animate-in fade-in">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-gray-300">Iteraciones</label>
+            <input
+              type="number"
+              min="100"
+              step="100"
+              value={iterations}
+              onChange={(e) => setIterations(Math.max(10, parseInt(e.target.value) || 100))}
+              className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-gray-300">Tiempo (s)</label>
             <input
               type="number"
               min="0.1"
@@ -127,27 +153,23 @@ export const AIParamsSelector: React.FC<AIParamsSelectorProps> = ({ onChange }) 
               step="0.5"
               value={timeLimit}
               onChange={(e) => setTimeLimit(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
-              className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+              className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2"
             />
-            <span className="text-xs text-gray-500">Se detendrá si se agota el tiempo, aunque falten iteraciones.</span>
+          </div>
         </div>
-        </>
       )}
 
+      {/* Q-Learning Params */}
       {algorithm === 'qlearning' && (
-        <div className="flex flex-col gap-1.5 animate-fade-in">
-          <label className="text-sm font-medium text-gray-300">Epsilon (Exploración)</label>
+        <div className="flex flex-col gap-1.5 animate-in fade-in">
+          <label className="text-sm font-medium text-gray-300">Epsilon</label>
           <input
             type="number"
-            min="0"
-            max="1"
-            step="0.05"
+            min="0" max="1" step="0.05"
             value={epsilon}
-            // AQUÍ SE USA setEpsilon:
-            onChange={(e) => setEpsilon(Math.min(1, Math.max(0, parseFloat(e.target.value) || 0)))}
-            className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+            onChange={(e) => setEpsilon(parseFloat(e.target.value))}
+            className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2"
           />
-          <span className="text-xs text-gray-500">Probabilidad de movimiento aleatorio (0.0 - 1.0).</span>
         </div>
       )}
     </div>

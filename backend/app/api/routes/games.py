@@ -261,11 +261,13 @@ def make_bot_move(
         raise HTTPException(status_code=400, detail="No AI configured for this player")
 
     start_time = time.time()
+    ai_params = dict(ai_config.parameters) if ai_config.parameters else {}
+    ai_params["heuristic"] = ai_config.heuristic
     move_coords = ai.select_best_move(
         board=game.board_state,
         player=player,
         algorithm=ai_config.algorithm,
-        parameters=ai_config.parameters,
+        parameters=ai_params,
     )
     execution_time = time.time() - start_time
 

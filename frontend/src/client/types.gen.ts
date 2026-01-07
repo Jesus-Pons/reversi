@@ -10,7 +10,7 @@ export type AIConfig = {
     };
 };
 
-export type AIHeuristic = 'static_weights' | 'mobility_based' | 'hybrid' | 'random_rollout' | 'greedy_rollout' | 'learned_weights' | 'none';
+export type AIHeuristic = 'static_weights' | 'mobility_based' | 'hybrid' | 'none';
 
 export type AlphaBetaParams = {
     /**

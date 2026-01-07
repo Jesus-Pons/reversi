@@ -12,6 +12,7 @@ def get_move(board, player, parameters: dict):
     Punto de entrada del algoritmo Alpha-Beta.
     """
     depth = parameters.get("depth", 3)
+    heuristic_type = parameters.get("heuristic", "static_weights")
 
     valid_moves = logic.get_valid_moves(board, player)
 
@@ -33,7 +34,9 @@ def get_move(board, player, parameters: dict):
         new_board = sim_result.board_state
 
         # Llamada recursiva (cambio de turno -> minimizar)
-        score = _minimax(new_board, depth - 1, alpha, beta, False, player)
+        score = _minimax(
+            new_board, depth - 1, alpha, beta, False, player, heuristic_type
+        )
 
         if score > best_score:
             best_score = score
@@ -44,7 +47,7 @@ def get_move(board, player, parameters: dict):
     return best_move
 
 
-def _minimax(board, depth, alpha, beta, is_maximizing, my_player_id):
+def _minimax(board, depth, alpha, beta, is_maximizing, my_player_id, heuristic_type):
     """
     Motor recursivo de búsqueda.
     """
@@ -64,11 +67,17 @@ def _minimax(board, depth, alpha, beta, is_maximizing, my_player_id):
             # Si es solo un PASE de turno, seguimos profundizando pero sin consumir profundidad
             # o restando 1 para evitar bucles.
             return _minimax(
-                board, depth - 1, alpha, beta, not is_maximizing, my_player_id
+                board,
+                depth - 1,
+                alpha,
+                beta,
+                not is_maximizing,
+                my_player_id,
+                heuristic_type,
             )
 
         # Si llegamos al límite de profundidad, usamos la heurística
-        return evaluate_board(board, my_player_id)
+        return evaluate_board(board, my_player_id, heuristic_type)
 
     # --- RECURSIÓN ---
     if is_maximizing:
@@ -76,7 +85,13 @@ def _minimax(board, depth, alpha, beta, is_maximizing, my_player_id):
         for move in valid_moves:
             sim_result = logic.apply_move(board, move[0], move[1], my_player_id)
             eval_score = _minimax(
-                sim_result.board_state, depth - 1, alpha, beta, False, my_player_id
+                sim_result.board_state,
+                depth - 1,
+                alpha,
+                beta,
+                False,
+                my_player_id,
+                heuristic_type,
             )
             max_eval = max(max_eval, eval_score)
             alpha = max(alpha, eval_score)
@@ -88,7 +103,13 @@ def _minimax(board, depth, alpha, beta, is_maximizing, my_player_id):
         for move in valid_moves:
             sim_result = logic.apply_move(board, move[0], move[1], opponent_id)
             eval_score = _minimax(
-                sim_result.board_state, depth - 1, alpha, beta, True, my_player_id
+                sim_result.board_state,
+                depth - 1,
+                alpha,
+                beta,
+                True,
+                my_player_id,
+                heuristic_type,
             )
             min_eval = min(min_eval, eval_score)
             beta = min(beta, eval_score)

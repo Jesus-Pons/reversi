@@ -32,6 +32,11 @@ def get_ai_move(board, player, config):
     # Convertir parámetros de modelo Pydantic a dict si es necesario
     if hasattr(params, "model_dump"):
         params = params.model_dump()
+    else:
+        params = dict(params) if params else {}
+
+    if hasattr(config, "heuristic"):
+        params["heuristic"] = config.heuristic
 
     if algorithm == AIAlgorithm.ALPHABETA:
         return alphabeta.get_move(board, player, params)

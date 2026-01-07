@@ -110,18 +110,11 @@ class AIAlgorithm(str, PyEnum):
 
 
 class AIHeuristic(str, PyEnum):
-    # Para AlphaBeta / Minimax
+    # Para AlphaBeta / Montecarlo
     STATIC_WEIGHTS = "static_weights"  # Matriz fija de valores
     MOBILITY_BASED = "mobility_based"  # Prioriza tener muchos movimientos
     HYBRID = "hybrid"  # Mezcla de ambas
-
-    # Para MCTS
-    RANDOM_ROLLOUT = "random_rollout"  # Simulación totalmente aleatoria
-    GREEDY_ROLLOUT = "greedy_rollout"  # Simulación voraz (intenta comer mucho)
-
-    # Para Q-Learning / Neural Networks
-    LEARNED_WEIGHTS = "learned_weights"  # Usa pesos aprendidos
-    NONE = "none"  # Por si algún algoritmo no usa heurística
+    NONE = "none"
 
 
 class Turn(str, PyEnum):

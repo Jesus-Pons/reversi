@@ -29,7 +29,7 @@ export const AIConfigSchema = {
 
 export const AIHeuristicSchema = {
     type: 'string',
-    enum: ['static_weights', 'mobility_based', 'hybrid', 'random_rollout', 'greedy_rollout', 'learned_weights', 'none'],
+    enum: ['static_weights', 'mobility_based', 'hybrid', 'none'],
     title: 'AIHeuristic'
 } as const;
 
