@@ -4,8 +4,10 @@ import random
 from app import logic
 from app.ai import alphabeta, montecarlo, qlearning  # Importar tus modulos
 from app.models import AIAlgorithm
+from app.utils import measure_performance
 
 
+@measure_performance
 def select_best_move(board, player, algorithm: AIAlgorithm, parameters: dict):
     """
     Función fachada que redirige al algoritmo correcto

@@ -170,6 +170,7 @@ class Game(SQLModel, table=True):
     bot_black_id: uuid.UUID | None = Field(default=None, foreign_key="aiconfig.id")
     player_white_id: uuid.UUID | None = Field(default=None, foreign_key="user.id")
     bot_white_id: uuid.UUID | None = Field(default=None, foreign_key="aiconfig.id")
+    simulation_id: uuid.UUID | None = Field(default=None, foreign_key="simulation.id")
 
     board_state: List[Any] = Field(
         default_factory=get_initial_board, sa_column=Column(JSON)
@@ -201,6 +202,7 @@ class Game(SQLModel, table=True):
         back_populates="games_owned",
         sa_relationship_kwargs={"foreign_keys": "Game.owner_id"},
     )
+    simulation: Optional["Simulation"] = Relationship(back_populates="games")
 
 
 class Moves(SQLModel, table=True):
@@ -209,6 +211,8 @@ class Moves(SQLModel, table=True):
     move_number: int
     player: Turn = Field(sa_column=Column(SAEnum(Turn)))
     position: List[Any] | None = Field(default=None, sa_column=Column(JSON))
+    execution_time: float | None = Field(default=None)  # Segundos
+    memory_used: float | None = Field(default=None)  # MB
 
     game: Game = Relationship(back_populates="moves")
 
@@ -240,6 +244,7 @@ class Simulation(SQLModel, table=True):
         back_populates="simulations_as_white",  # <--- Coincide con AIConfig
         sa_relationship_kwargs={"foreign_keys": "Simulation.bot_white_id"},
     )
+    games: list["Game"] = Relationship(back_populates="simulation", cascade_delete=True)
 
 
 # Pydantic Models
@@ -347,6 +352,8 @@ class BotMoveResponse(BaseModel):
     game: GamePublic  # El estado resultante
     move_made: List[int] | None  # La coordenada donde movió (None si pasó turno)
     message: str  # Ej: "AlphaBeta movió a D3 en 1.5s"
+    execution_time: float
+    memory_peak_mb: float
 
 
 class GameStateResult(BaseModel):

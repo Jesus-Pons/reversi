@@ -3,16 +3,20 @@ import time
 import uuid
 from typing import Any
 
-from app import logic
+from app import ai, logic
 from app.ai import alphabeta, montecarlo
 from app.api.deps import CurrentUser, SessionDep
 from app.core.db import engine
 from app.models import (
     AIAlgorithm,
     AIConfig,
+    Game,
+    Moves,
     Simulation,
     SimulationRequest,
     SimulationsPublic,
+    Turn,
+    Winner,
 )
 from app.utils import get_initial_board
 from fastapi import APIRouter, BackgroundTasks, HTTPException
@@ -61,83 +65,158 @@ def get_ai_move(board, player, config_model):
 
 
 def run_simulation_task(simulation_id: uuid.UUID, request: SimulationRequest):
-    """
-    Tarea en segundo plano con ACTUALIZACIÓN INCREMENTAL.
-    """
     with Session(engine) as session:
         try:
-            start_time = time.time()
+            # 1. Recuperar datos de configuración
+            sim_db = session.get(Simulation, simulation_id)
+            if not sim_db:
+                return
+
+            # Preparamos params (igual que antes...)
+            params_black = dict(sim_db.bot_black.parameters or {})
+            params_black["heuristic"] = sim_db.bot_black.heuristic
+            params_white = dict(sim_db.bot_white.parameters or {})
+            params_white["heuristic"] = sim_db.bot_white.heuristic
+
+            start_sim_time = time.time()
             results = {"black": 0, "white": 0, "draw": 0}
 
-            # Configuración de lotes (Guardar cada X partidas)
-            # Si son pocas partidas (ej: 100), guardamos cada 1. Si son muchas (1000), cada 10.
-            BATCH_SIZE = 1 if request.num_games < 100 else 10
-
+            # --- BUCLE DE PARTIDAS ---
             for i in range(request.num_games):
-                # ... (Toda la lógica de inicializar tablero y bucle while game_over se mantiene IGUAL) ...
-                # COPIA AQUÍ TU LÓGICA DE JUEGO EXISTENTE (board = get_initial_board()...)
 
-                # --- [RESUMEN DE LÓGICA DE JUEGO PARA NO REPETIR CÓDIGO GIGANTE] ---
-                board = get_initial_board()
+                # A. CREAR PARTIDA REAL EN BD (Necesario para tener game_id en Moves)
+                game_db = Game(
+                    owner_id=sim_db.user_id,
+                    bot_black_id=sim_db.bot_black_id,
+                    bot_white_id=sim_db.bot_white_id,
+                    board_state=get_initial_board(),
+                    simulation_id=sim_db.id,
+                    current_turn=Turn.BLACK,
+                    score_black=2,
+                    score_white=2,
+                )
+                session.add(game_db)
+                session.commit()
+                session.refresh(game_db)  # Obtenemos el ID generado
+
+                # Variables locales para velocidad
+                board = game_db.board_state
                 current_turn = 1
                 game_over = False
                 consecutive_passes = 0
-                while not game_over:
-                    # ... lógica de movimientos ...
-                    player_id = current_turn
-                    config = request.bot_black if player_id == 1 else request.bot_white
-                    move = get_ai_move(board, player_id, config)
 
-                    if move:
+                move_counter = 0
+
+                # --- BUCLE DE TURNOS (JUGADA A JUGADA) ---
+                while not game_over:
+
+                    move_counter += 1
+                    player_id = current_turn
+
+                    # Determinar quién juega
+                    if player_id == 1:
+                        algo = sim_db.bot_black.algorithm
+                        params = params_black
+                    else:
+                        algo = sim_db.bot_white.algorithm
+                        params = params_white
+
+                    # B. LLAMADA CRÍTICA: Aquí obtenemos Tiempo y RAM
+                    # move_coords: [fila, col] o None
+                    # time_taken: float (segundos)
+                    # memory_mb: float (MB)
+                    move_coords, time_taken, memory_mb = ai.select_best_move(
+                        board=board, player=player_id, algorithm=algo, parameters=params
+                    )
+
+                    # C. GUARDAR EL MOVIMIENTO CON ESTADÍSTICAS
+                    # Guardamos INCLUSO si es un "Pass" (move_coords es None),
+                    # porque tu tutor querrá saber cuánto tardó la IA en decidir pasar.
+                    new_move = Moves(
+                        game_id=game_db.id,
+                        move_number=move_counter,  # O usar un contador local 'turn_count'
+                        player=Turn.BLACK if player_id == 1 else Turn.WHITE,
+                        position=move_coords,
+                        # --- DATOS DEL TFG ---
+                        execution_time=time_taken,
+                        memory_used=memory_mb,
+                    )
+                    session.add(new_move)
+
+                    # D. APLICAR LÓGICA DE JUEGO
+                    if move_coords:
                         consecutive_passes = 0
-                        res = logic.apply_move(board, move[0], move[1], player_id)
+                        res = logic.apply_move(
+                            board, move_coords[0], move_coords[1], player_id
+                        )
+
+                        # Actualizamos estado visual de la partida
                         board = res.board_state
+                        game_db.board_state = res.board_state
+                        game_db.score_black = res.score_black
+                        game_db.score_white = res.score_white
+
                         if res.winner:
                             game_over = True
                             if res.winner == "black":
                                 results["black"] += 1
+                                game_db.winner = Winner.BLACK
                             elif res.winner == "white":
                                 results["white"] += 1
+                                game_db.winner = Winner.WHITE
                             else:
                                 results["draw"] += 1
+                                game_db.winner = Winner.DRAW
                         elif res.current_turn:
                             current_turn = res.current_turn
+                            game_db.current_turn = (
+                                Turn.BLACK if current_turn == 1 else Turn.WHITE
+                            )
                         else:
                             game_over = True
                     else:
+                        # Lógica de Pasar Turno
                         consecutive_passes += 1
                         if consecutive_passes >= 2:
                             game_over = True
+                            # Calcular ganador por conteo final...
+                            # (Lógica de conteo igual que antes)
                             b_c = sum(r.count(1) for r in board)
                             w_c = sum(r.count(2) for r in board)
+                            game_db.score_black = b_c
+                            game_db.score_white = w_c
+
                             if b_c > w_c:
                                 results["black"] += 1
+                                game_db.winner = Winner.BLACK
                             elif w_c > b_c:
                                 results["white"] += 1
+                                game_db.winner = Winner.WHITE
                             else:
                                 results["draw"] += 1
+                                game_db.winner = Winner.DRAW
                         else:
                             current_turn = 3 - current_turn
-                # -------------------------------------------------------------------
+                            game_db.current_turn = (
+                                Turn.BLACK if current_turn == 1 else Turn.WHITE
+                            )
 
-                # --- NUEVA LÓGICA DE ACTUALIZACIÓN ---
-                # Si hemos completado un lote o es la última partida, actualizamos DB
-                if (i + 1) % BATCH_SIZE == 0 or (i + 1) == request.num_games:
-                    simulation = session.get(Simulation, simulation_id)
-                    if simulation:
-                        simulation.black_wins = results["black"]
-                        simulation.white_wins = results["white"]
-                        simulation.draws = results["draw"]
-                        simulation.time_elapsed = time.time() - start_time
+                    # Guardamos estado intermedio del juego (Opcional: hacer commit aquí ralentiza mucho)
+                    session.add(game_db)
 
-                        session.add(simulation)
-                        session.commit()
-                        # session.refresh no es necesario aquí y ahorra tiempo
+                # FIN DE LA PARTIDA: Hacemos commit de todos los Moves y el Game final
+                session.commit()
 
-            print(f"Simulación {simulation_id} finalizada exitosamente.")
+                # Actualizar progreso global de la simulación
+                sim_db.black_wins = results["black"]
+                sim_db.white_wins = results["white"]
+                sim_db.draws = results["draw"]
+                sim_db.time_elapsed = time.time() - start_sim_time
+                session.add(sim_db)
+                session.commit()
 
         except Exception as e:
-            print(f"Error CRÍTICO en simulación {simulation_id}: {e}")
+            print(f"Error simulation: {e}")
 
 
 @router.post("/", response_model=Simulation)

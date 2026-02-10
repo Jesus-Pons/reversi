@@ -148,10 +148,18 @@ export const BotMoveResponseSchema = {
         message: {
             type: 'string',
             title: 'Message'
+        },
+        execution_time: {
+            type: 'number',
+            title: 'Execution Time'
+        },
+        memory_peak_mb: {
+            type: 'number',
+            title: 'Memory Peak Mb'
         }
     },
     type: 'object',
-    required: ['game', 'move_made', 'message'],
+    required: ['game', 'move_made', 'message', 'execution_time', 'memory_peak_mb'],
     title: 'BotMoveResponse'
 } as const;
 
@@ -294,6 +302,18 @@ export const GameSchema = {
                 }
             ],
             title: 'Bot White Id'
+        },
+        simulation_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Simulation Id'
         },
         board_state: {
             items: {},
@@ -634,6 +654,28 @@ export const MovesSchema = {
                 }
             ],
             title: 'Position'
+        },
+        execution_time: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Execution Time'
+        },
+        memory_used: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Memory Used'
         }
     },
     type: 'object',

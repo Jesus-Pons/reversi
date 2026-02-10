@@ -41,6 +41,8 @@ export type BotMoveResponse = {
     game: GamePublic;
     move_made: (Array<(number)> | null);
     message: string;
+    execution_time: number;
+    memory_peak_mb: number;
 };
 
 export type ConfigAlphaBeta = {
@@ -76,6 +78,7 @@ export type Game = {
     bot_black_id?: (string | null);
     player_white_id?: (string | null);
     bot_white_id?: (string | null);
+    simulation_id?: (string | null);
     board_state?: Array<unknown>;
     score_black?: number;
     score_white?: number;
@@ -142,6 +145,8 @@ export type Moves = {
     move_number: number;
     player: Turn;
     position?: (Array<unknown> | null);
+    execution_time?: (number | null);
+    memory_used?: (number | null);
 };
 
 export type NewPassword = {

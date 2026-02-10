@@ -1,8 +1,11 @@
 import logging
+import time
+import tracemalloc
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from functools import wraps
 from pathlib import Path
-from typing import Any
+from typing import Any, Tuple
 
 import emails  # type: ignore
 import jwt
@@ -131,3 +134,24 @@ def get_initial_board() -> list[list[int]]:
     board[4][4] = 2
 
     return board
+
+
+def measure_performance(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs) -> Tuple[Any, float, float]:
+        tracemalloc.start()
+
+        start_time = time.perf_counter()
+
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+
+        current, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        execution_time = end_time - start_time
+
+        memmory_mb = peak / 1024 / 1024
+        return result, execution_time, memmory_mb
+
+    return wrapper

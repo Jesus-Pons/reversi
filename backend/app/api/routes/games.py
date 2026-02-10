@@ -58,9 +58,12 @@ def read_my_games(
         select(func.count())
         .select_from(Game)
         .where(
-            (Game.player_black_id == current_user.id)
-            | (Game.player_white_id == current_user.id)
-            | (Game.owner_id == current_user.id)
+            (
+                (Game.player_black_id == current_user.id)
+                | (Game.player_white_id == current_user.id)
+                | (Game.owner_id == current_user.id)
+            )
+            & (Game.simulation_id == None)
         )
     )
     count = session.exec(count_statement).one()
@@ -68,9 +71,12 @@ def read_my_games(
     statement = (
         select(Game)
         .where(
-            (Game.player_black_id == current_user.id)
-            | (Game.player_white_id == current_user.id)
-            | (Game.owner_id == current_user.id)
+            (
+                (Game.player_black_id == current_user.id)
+                | (Game.player_white_id == current_user.id)
+                | (Game.owner_id == current_user.id)
+            )
+            & (Game.simulation_id == None)
         )
         .offset(skip)
         .limit(limit)
@@ -210,6 +216,14 @@ def human_move(
     ):
         raise HTTPException(status_code=400, detail="Invalid move")
 
+    new_move = Moves(
+        game_id=game.id,
+        move_number=len(game.moves) + 1,
+        player=Turn.BLACK if player == 1 else Turn.WHITE,
+        position=move.coordinate,
+    )
+    session.add(new_move)
+
     result: GameStateResult = logic.apply_move(
         game.board_state, move.coordinate[0], move.coordinate[1], player
     )
@@ -259,17 +273,14 @@ def make_bot_move(
 
     if ai_config is None:
         raise HTTPException(status_code=400, detail="No AI configured for this player")
-
-    start_time = time.time()
     ai_params = dict(ai_config.parameters) if ai_config.parameters else {}
     ai_params["heuristic"] = ai_config.heuristic
-    move_coords = ai.select_best_move(
+    move_coords, time_taken, memory_mb = ai.select_best_move(
         board=game.board_state,
         player=player,
         algorithm=ai_config.algorithm,
         parameters=ai_params,
     )
-    execution_time = time.time() - start_time
 
     if move_coords:
         result = logic.apply_move(
@@ -287,7 +298,16 @@ def make_bot_move(
         elif result.current_turn == 2:
             game.current_turn = Turn.WHITE
 
-        message = f"{ai_config.algorithm.value} tardó {execution_time:.3f}s"
+        new_move = Moves(
+            game_id=game.id,
+            move_number=len(game.moves) + 1,
+            player=Turn.BLACK if player == 1 else Turn.WHITE,
+            position=move_coords,
+            execution_time=time_taken,
+            memory_used=memory_mb,
+        )
+        session.add(new_move)
+        message = f"{ai_config.algorithm.value} movió a {move_coords} ({time_taken:.3f}s, {memory_mb:.2f}MB)"
 
     else:
         opponent = 3 - player
@@ -299,6 +319,9 @@ def make_bot_move(
                     move_number=len(game.moves) + 1,
                     game_id=game.id,
                     player=Turn.BLACK if player == 1 else Turn.WHITE,
+                    position=None,
+                    execution_time=time_taken,
+                    memory_used=memory_mb,
                 )
             )
             message = f"AI no pudo mover y pasó el turno"
@@ -317,6 +340,8 @@ def make_bot_move(
         game=GamePublic.model_validate(game),
         move_made=move_coords,
         message=message,
+        execution_time=time_taken,
+        memory_peak_mb=memory_mb,
     )
 
 
