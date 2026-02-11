@@ -535,6 +535,58 @@ export const GamePublicSchema = {
     title: 'GamePublic'
 } as const;
 
+export const GameStatsSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        move_count: {
+            type: 'integer',
+            title: 'Move Count'
+        },
+        winner: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Winner'
+        },
+        score_black: {
+            type: 'integer',
+            title: 'Score Black'
+        },
+        score_white: {
+            type: 'integer',
+            title: 'Score White'
+        },
+        avg_time_black: {
+            type: 'number',
+            title: 'Avg Time Black'
+        },
+        avg_ram_black: {
+            type: 'number',
+            title: 'Avg Ram Black'
+        },
+        avg_time_white: {
+            type: 'number',
+            title: 'Avg Time White'
+        },
+        avg_ram_white: {
+            type: 'number',
+            title: 'Avg Ram White'
+        }
+    },
+    type: 'object',
+    required: ['id', 'move_count', 'winner', 'score_black', 'score_white', 'avg_time_black', 'avg_ram_black', 'avg_time_white', 'avg_ram_white'],
+    title: 'GameStats'
+} as const;
+
 export const GamesPublicSchema = {
     properties: {
         data: {
@@ -805,6 +857,72 @@ export const SimulationSchema = {
     type: 'object',
     required: ['num_games', 'user_id', 'bot_black_id', 'bot_white_id', 'black_wins', 'white_wins', 'draws', 'time_elapsed'],
     title: 'Simulation'
+} as const;
+
+export const SimulationDetailsSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        created_at: {
+            type: 'number',
+            title: 'Created At'
+        },
+        num_games: {
+            type: 'integer',
+            title: 'Num Games'
+        },
+        time_elapsed: {
+            type: 'number',
+            title: 'Time Elapsed'
+        },
+        bot_black: {
+            '$ref': '#/components/schemas/AIConfig'
+        },
+        bot_white: {
+            '$ref': '#/components/schemas/AIConfig'
+        },
+        black_wins: {
+            type: 'integer',
+            title: 'Black Wins'
+        },
+        white_wins: {
+            type: 'integer',
+            title: 'White Wins'
+        },
+        draws: {
+            type: 'integer',
+            title: 'Draws'
+        },
+        global_avg_time_black: {
+            type: 'number',
+            title: 'Global Avg Time Black'
+        },
+        global_avg_ram_black: {
+            type: 'number',
+            title: 'Global Avg Ram Black'
+        },
+        global_avg_time_white: {
+            type: 'number',
+            title: 'Global Avg Time White'
+        },
+        global_avg_ram_white: {
+            type: 'number',
+            title: 'Global Avg Ram White'
+        },
+        games: {
+            items: {
+                '$ref': '#/components/schemas/GameStats'
+            },
+            type: 'array',
+            title: 'Games'
+        }
+    },
+    type: 'object',
+    required: ['id', 'created_at', 'num_games', 'time_elapsed', 'bot_black', 'bot_white', 'black_wins', 'white_wins', 'draws', 'global_avg_time_black', 'global_avg_ram_black', 'global_avg_time_white', 'global_avg_ram_white', 'games'],
+    title: 'SimulationDetails'
 } as const;
 
 export const SimulationPublicSchema = {

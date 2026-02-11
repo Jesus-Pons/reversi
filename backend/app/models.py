@@ -197,7 +197,7 @@ class Game(SQLModel, table=True):
         sa_relationship_kwargs={"foreign_keys": "Game.bot_white_id"},
     )
 
-    moves: list["Moves"] = Relationship(back_populates="game")
+    moves: list["Moves"] = Relationship(back_populates="game", cascade_delete=True)
     owner: "User" = Relationship(
         back_populates="games_owned",
         sa_relationship_kwargs={"foreign_keys": "Game.owner_id"},
@@ -395,3 +395,37 @@ class SimulationPublic(SQLModel):
 class SimulationsPublic(SQLModel):
     data: list[SimulationPublic]
     count: int
+
+
+class GameStats(BaseModel):
+    id: uuid.UUID
+    move_count: int
+    winner: str | None
+    score_black: int
+    score_white: int
+
+    avg_time_black: float
+    avg_ram_black: float
+    avg_time_white: float
+    avg_ram_white: float
+
+
+class SimulationDetails(BaseModel):
+    id: uuid.UUID
+    created_at: float
+    num_games: int
+    time_elapsed: float
+
+    bot_black: AIConfig
+    bot_white: AIConfig
+
+    black_wins: int
+    white_wins: int
+    draws: int
+
+    global_avg_time_black: float
+    global_avg_ram_black: float
+    global_avg_time_white: float
+    global_avg_ram_white: float
+
+    games: List[GameStats]

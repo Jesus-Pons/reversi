@@ -11,8 +11,11 @@ from app.models import (
     AIAlgorithm,
     AIConfig,
     Game,
+    GameStats,
+    Message,
     Moves,
     Simulation,
+    SimulationDetails,
     SimulationRequest,
     SimulationsPublic,
     Turn,
@@ -313,3 +316,153 @@ def read_simulations(
     simulations = session.exec(statement).all()
 
     return SimulationsPublic(data=simulations, count=count)
+
+
+@router.delete("/{simulation_id}", response_model=Message)
+def delete_simulation(
+    simulation_id: uuid.UUID,
+    session: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Delete a simulation.
+    """
+    simulation = session.get(Simulation, simulation_id)
+    if not simulation:
+        raise HTTPException(status_code=404, detail="Simulation not found")
+
+    # Seguridad: Solo el dueño (o un superuser) puede borrarla
+    if simulation.user_id != current_user.id and not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    session.delete(simulation)
+    session.commit()
+
+    return Message(message="Simulation deleted successfully")
+
+
+@router.get("/{simulation_id}", response_model=SimulationDetails)
+def get_simulation_details(
+    simulation_id: uuid.UUID,
+    session: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Obtener detalles completos de una simulación, incluyendo todas las partidas y movimientos.
+    """
+    simulation = session.get(Simulation, simulation_id)
+    if not simulation:
+        raise HTTPException(status_code=404, detail="Simulation not found")
+
+    # Seguridad: Solo el dueño (o un superuser) puede verla
+    if simulation.user_id != current_user.id and not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    # Cargar partidas y movimientos relacionados
+    statement = (
+        select(
+            Moves.game_id,
+            Moves.player,
+            func.avg(Moves.execution_time).label("avg_time"),
+            func.avg(Moves.memory_used).label("avg_ram"),
+            func.count(Moves.id).label("count"),
+        )
+        .join(Game)
+        .where(Game.simulation_id == simulation_id)
+        .group_by(Moves.game_id, Moves.player)
+    )
+    stats_rows = session.exec(statement).all()
+
+    game_stats_map = {}
+
+    # Acumuladores globales
+    total_time_black = 0.0
+    total_ram_black = 0.0
+    count_moves_black = 0
+
+    total_time_white = 0.0
+    total_ram_white = 0.0
+    count_moves_white = 0
+
+    for row in stats_rows:
+        g_id, player, avg_time, avg_ram, count = row
+        # avg_time puede ser None si no hubo movimientos
+        avg_time = avg_time or 0.0
+        avg_ram = avg_ram or 0.0
+
+        if g_id not in game_stats_map:
+            game_stats_map[g_id] = {}
+
+        game_stats_map[g_id][player] = {
+            "avg_time": avg_time,
+            "avg_ram": avg_ram,
+            "count": count,
+        }
+
+        # Sumar a globales (ponderado por número de movimientos)
+        if player == Turn.BLACK:
+            total_time_black += avg_time * count
+            total_ram_black += avg_ram * count
+            count_moves_black += count
+        else:
+            total_time_white += avg_time * count
+            total_ram_white += avg_ram * count
+            count_moves_white += count
+
+    # 4. Construir la lista de GameStats
+    games_response = []
+    # Traemos las partidas ordenadas
+    games_db = session.exec(
+        select(Game).where(Game.simulation_id == simulation_id).order_by(Game.id)
+    ).all()
+
+    for game in games_db:
+        # Recuperar stats calculadas o poner 0
+        stats = game_stats_map.get(game.id, {})
+        sb = stats.get(Turn.BLACK, {"avg_time": 0, "avg_ram": 0})
+        sw = stats.get(Turn.WHITE, {"avg_time": 0, "avg_ram": 0})
+
+        games_response.append(
+            GameStats(
+                id=game.id,
+                move_count=len(game.moves),  # O sumar counts de sb y sw
+                winner=game.winner.value if game.winner else None,
+                score_black=game.score_black,
+                score_white=game.score_white,
+                avg_time_black=sb["avg_time"],
+                avg_ram_black=sb["avg_ram"],
+                avg_time_white=sw["avg_time"],
+                avg_ram_white=sw["avg_ram"],
+            )
+        )
+
+    # 5. Calcular Globales finales
+    global_avg_time_b = (
+        (total_time_black / count_moves_black) if count_moves_black > 0 else 0
+    )
+    global_avg_ram_b = (
+        (total_ram_black / count_moves_black) if count_moves_black > 0 else 0
+    )
+    global_avg_time_w = (
+        (total_time_white / count_moves_white) if count_moves_white > 0 else 0
+    )
+    global_avg_ram_w = (
+        (total_ram_white / count_moves_white) if count_moves_white > 0 else 0
+    )
+
+    return SimulationDetails(
+        id=simulation.id,
+        created_at=simulation.created_at,
+        num_games=simulation.num_games,
+        time_elapsed=simulation.time_elapsed,
+        bot_black=simulation.bot_black,
+        bot_white=simulation.bot_white,
+        black_wins=simulation.black_wins,
+        white_wins=simulation.white_wins,
+        draws=simulation.draws,
+        global_avg_time_black=global_avg_time_b,
+        global_avg_ram_black=global_avg_ram_b,
+        global_avg_time_white=global_avg_time_w,
+        global_avg_ram_white=global_avg_ram_w,
+        games=games_response,
+    )

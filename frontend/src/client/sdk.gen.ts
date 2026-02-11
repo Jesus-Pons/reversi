@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { GamesReadGamesData, GamesReadGamesResponse, GamesCreateGameData, GamesCreateGameResponse, GamesReadMyGamesData, GamesReadMyGamesResponse, GamesGetGameByIdData, GamesGetGameByIdResponse, GamesGetValidMovesData, GamesGetValidMovesResponse, GamesHumanMoveData, GamesHumanMoveResponse, GamesMakeBotMoveData, GamesMakeBotMoveResponse, GamesGetGameHistoryData, GamesGetGameHistoryResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SimulationRunSimulationData, SimulationRunSimulationResponse, SimulationReadSimulationsData, SimulationReadSimulationsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { GamesReadGamesData, GamesReadGamesResponse, GamesCreateGameData, GamesCreateGameResponse, GamesReadMyGamesData, GamesReadMyGamesResponse, GamesGetGameByIdData, GamesGetGameByIdResponse, GamesGetValidMovesData, GamesGetValidMovesResponse, GamesHumanMoveData, GamesHumanMoveResponse, GamesMakeBotMoveData, GamesMakeBotMoveResponse, GamesGetGameHistoryData, GamesGetGameHistoryResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SimulationRunSimulationData, SimulationRunSimulationResponse, SimulationReadSimulationsData, SimulationReadSimulationsResponse, SimulationDeleteSimulationData, SimulationDeleteSimulationResponse, SimulationGetSimulationDetailsData, SimulationGetSimulationDetailsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class GamesService {
     /**
@@ -337,6 +337,48 @@ export class SimulationService {
             query: {
                 skip: data.skip,
                 limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Simulation
+     * Delete a simulation.
+     * @param data The data for the request.
+     * @param data.simulationId
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static deleteSimulation(data: SimulationDeleteSimulationData): CancelablePromise<SimulationDeleteSimulationResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/simulation/{simulation_id}',
+            path: {
+                simulation_id: data.simulationId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Simulation Details
+     * Obtener detalles completos de una simulación, incluyendo todas las partidas y movimientos.
+     * @param data The data for the request.
+     * @param data.simulationId
+     * @returns SimulationDetails Successful Response
+     * @throws ApiError
+     */
+    public static getSimulationDetails(data: SimulationGetSimulationDetailsData): CancelablePromise<SimulationGetSimulationDetailsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/simulation/{simulation_id}',
+            path: {
+                simulation_id: data.simulationId
             },
             errors: {
                 422: 'Validation Error'

@@ -15,10 +15,11 @@ import { Route as RecoverPasswordRouteImport } from './routes/recover-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
-import { Route as LayoutSimulationRouteImport } from './routes/_layout/simulation'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
+import { Route as LayoutSimulationIndexRouteImport } from './routes/_layout/simulation/index'
 import { Route as LayoutGamesIndexRouteImport } from './routes/_layout/games/index'
+import { Route as LayoutSimulationSimulationIdRouteImport } from './routes/_layout/simulation/$simulationId'
 import { Route as LayoutGamesNewRouteImport } from './routes/_layout/games/new'
 import { Route as LayoutGamesGameIdRouteImport } from './routes/_layout/games/$gameId'
 
@@ -51,11 +52,6 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutSimulationRoute = LayoutSimulationRouteImport.update({
-  id: '/simulation',
-  path: '/simulation',
-  getParentRoute: () => LayoutRoute,
-} as any)
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -66,11 +62,22 @@ const LayoutAdminRoute = LayoutAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutSimulationIndexRoute = LayoutSimulationIndexRouteImport.update({
+  id: '/simulation/',
+  path: '/simulation/',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutGamesIndexRoute = LayoutGamesIndexRouteImport.update({
   id: '/games/',
   path: '/games/',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutSimulationSimulationIdRoute =
+  LayoutSimulationSimulationIdRouteImport.update({
+    id: '/simulation/$simulationId',
+    path: '/simulation/$simulationId',
+    getParentRoute: () => LayoutRoute,
+  } as any)
 const LayoutGamesNewRoute = LayoutGamesNewRouteImport.update({
   id: '/games/new',
   path: '/games/new',
@@ -89,11 +96,12 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/settings': typeof LayoutSettingsRoute
-  '/simulation': typeof LayoutSimulationRoute
   '/': typeof LayoutIndexRoute
   '/games/$gameId': typeof LayoutGamesGameIdRoute
   '/games/new': typeof LayoutGamesNewRoute
+  '/simulation/$simulationId': typeof LayoutSimulationSimulationIdRoute
   '/games': typeof LayoutGamesIndexRoute
+  '/simulation': typeof LayoutSimulationIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -102,11 +110,12 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/settings': typeof LayoutSettingsRoute
-  '/simulation': typeof LayoutSimulationRoute
   '/': typeof LayoutIndexRoute
   '/games/$gameId': typeof LayoutGamesGameIdRoute
   '/games/new': typeof LayoutGamesNewRoute
+  '/simulation/$simulationId': typeof LayoutSimulationSimulationIdRoute
   '/games': typeof LayoutGamesIndexRoute
+  '/simulation': typeof LayoutSimulationIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -117,11 +126,12 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/settings': typeof LayoutSettingsRoute
-  '/_layout/simulation': typeof LayoutSimulationRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/games/$gameId': typeof LayoutGamesGameIdRoute
   '/_layout/games/new': typeof LayoutGamesNewRoute
+  '/_layout/simulation/$simulationId': typeof LayoutSimulationSimulationIdRoute
   '/_layout/games/': typeof LayoutGamesIndexRoute
+  '/_layout/simulation/': typeof LayoutSimulationIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -132,11 +142,12 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/settings'
-    | '/simulation'
     | '/'
     | '/games/$gameId'
     | '/games/new'
+    | '/simulation/$simulationId'
     | '/games'
+    | '/simulation'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -145,11 +156,12 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/settings'
-    | '/simulation'
     | '/'
     | '/games/$gameId'
     | '/games/new'
+    | '/simulation/$simulationId'
     | '/games'
+    | '/simulation'
   id:
     | '__root__'
     | '/_layout'
@@ -159,11 +171,12 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_layout/admin'
     | '/_layout/settings'
-    | '/_layout/simulation'
     | '/_layout/'
     | '/_layout/games/$gameId'
     | '/_layout/games/new'
+    | '/_layout/simulation/$simulationId'
     | '/_layout/games/'
+    | '/_layout/simulation/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -218,13 +231,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/simulation': {
-      id: '/_layout/simulation'
-      path: '/simulation'
-      fullPath: '/simulation'
-      preLoaderRoute: typeof LayoutSimulationRouteImport
-      parentRoute: typeof LayoutRoute
-    }
     '/_layout/settings': {
       id: '/_layout/settings'
       path: '/settings'
@@ -239,11 +245,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/simulation/': {
+      id: '/_layout/simulation/'
+      path: '/simulation'
+      fullPath: '/simulation'
+      preLoaderRoute: typeof LayoutSimulationIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/games/': {
       id: '/_layout/games/'
       path: '/games'
       fullPath: '/games'
       preLoaderRoute: typeof LayoutGamesIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/simulation/$simulationId': {
+      id: '/_layout/simulation/$simulationId'
+      path: '/simulation/$simulationId'
+      fullPath: '/simulation/$simulationId'
+      preLoaderRoute: typeof LayoutSimulationSimulationIdRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/games/new': {
@@ -266,21 +286,23 @@ declare module '@tanstack/react-router' {
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
-  LayoutSimulationRoute: typeof LayoutSimulationRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutGamesGameIdRoute: typeof LayoutGamesGameIdRoute
   LayoutGamesNewRoute: typeof LayoutGamesNewRoute
+  LayoutSimulationSimulationIdRoute: typeof LayoutSimulationSimulationIdRoute
   LayoutGamesIndexRoute: typeof LayoutGamesIndexRoute
+  LayoutSimulationIndexRoute: typeof LayoutSimulationIndexRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
-  LayoutSimulationRoute: LayoutSimulationRoute,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutGamesGameIdRoute: LayoutGamesGameIdRoute,
   LayoutGamesNewRoute: LayoutGamesNewRoute,
+  LayoutSimulationSimulationIdRoute: LayoutSimulationSimulationIdRoute,
   LayoutGamesIndexRoute: LayoutGamesIndexRoute,
+  LayoutSimulationIndexRoute: LayoutSimulationIndexRoute,
 }
 
 const LayoutRouteWithChildren =

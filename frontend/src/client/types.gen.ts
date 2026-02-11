@@ -112,6 +112,18 @@ export type GamesPublic = {
     count: number;
 };
 
+export type GameStats = {
+    id: string;
+    move_count: number;
+    winner: (string | null);
+    score_black: number;
+    score_white: number;
+    avg_time_black: number;
+    avg_ram_black: number;
+    avg_time_white: number;
+    avg_ram_white: number;
+};
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
@@ -181,6 +193,23 @@ export type Simulation = {
     white_wins: number;
     draws: number;
     time_elapsed: number;
+};
+
+export type SimulationDetails = {
+    id: string;
+    created_at: number;
+    num_games: number;
+    time_elapsed: number;
+    bot_black: AIConfig;
+    bot_white: AIConfig;
+    black_wins: number;
+    white_wins: number;
+    draws: number;
+    global_avg_time_black: number;
+    global_avg_ram_black: number;
+    global_avg_time_white: number;
+    global_avg_ram_white: number;
+    games: Array<GameStats>;
 };
 
 export type SimulationPublic = {
@@ -367,6 +396,18 @@ export type SimulationReadSimulationsData = {
 };
 
 export type SimulationReadSimulationsResponse = (SimulationsPublic);
+
+export type SimulationDeleteSimulationData = {
+    simulationId: string;
+};
+
+export type SimulationDeleteSimulationResponse = (Message);
+
+export type SimulationGetSimulationDetailsData = {
+    simulationId: string;
+};
+
+export type SimulationGetSimulationDetailsResponse = (SimulationDetails);
 
 export type UsersReadUsersData = {
     limit?: number;

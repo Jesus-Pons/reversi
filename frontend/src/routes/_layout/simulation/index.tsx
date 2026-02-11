@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { SimulationService } from "@/client/sdk.gen"
+import { useNavigate } from "@tanstack/react-router"
 // IMPORTANTE: Importamos SimulationPublic también
 import type { Simulation, SimulationPublic } from "@/client/types.gen"
 import { Button } from "@/components/ui/button"
@@ -21,7 +22,7 @@ import {
 } from "@/components/forms/AIParamsSelector"
 import { Badge } from "@/components/ui/badge"
 
-export const Route = createFileRoute("/_layout/simulation")({
+export const Route = createFileRoute("/_layout/simulation/")({
   component: SimulationPage,
 })
 
@@ -181,10 +182,31 @@ function NewSimulationPanel() {
 }
 
 function SimulationHistory() {
+  const queryClient = useQueryClient()
+  const navigate = useNavigate() // <--- Asegúrate de tener esto
+  
   const { data, isLoading } = useQuery({
     queryKey: ['simulations'], 
     queryFn: () => SimulationService.readSimulations({ limit: 50 })
   })
+
+  // ... (deleteMutation se queda igual) ...
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => SimulationService.deleteSimulation({ simulationId: id }), 
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['simulations'] })
+    },
+    onError: (err) => {
+      console.error("Error al borrar:", err)
+      alert("No se pudo eliminar la simulación. Revisa permisos o consola.")
+    }
+  })
+
+  const handleDelete = (id: string) => {
+    if (window.confirm("¿Estás seguro? Se borrarán todas las partidas asociadas.")) {
+      deleteMutation.mutate(id)
+    }
+  }
 
   if (isLoading) return <div className="text-center py-10 text-muted-foreground animate-pulse">Cargando historial...</div>
 
@@ -193,24 +215,36 @@ function SimulationHistory() {
       <Table>
         <TableHeader className="bg-gray-50 dark:bg-gray-900">
           <TableRow>
+            {/* ... (Encabezados iguales) ... */}
             <TableHead className="w-[180px]">Fecha</TableHead>
             <TableHead>Negras (Config)</TableHead>
             <TableHead>Blancas (Config)</TableHead>
             <TableHead className="text-center w-[100px]">Total</TableHead>
             <TableHead className="text-center w-[200px]">Resultados (N - B - E)</TableHead>
             <TableHead className="text-right w-[100px]">Tiempo</TableHead>
+            <TableHead className="text-center w-[80px]">Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {data?.data.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center h-32 text-muted-foreground">
+              <TableCell colSpan={7} className="text-center h-32 text-muted-foreground">
                 No hay simulaciones registradas en tu historial.
               </TableCell>
             </TableRow>
           ) : (
             data?.data.map((sim) => (
-              <TableRow key={sim.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+              <TableRow 
+                key={sim.id} 
+                // 1. AÑADIDO: cursor-pointer para feedback visual
+                className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors cursor-pointer"
+                
+                // 2. AÑADIDO: Navegación al hacer click en la fila
+                onClick={() => navigate({ 
+                  to: '/simulation/$simulationId', 
+                  params: { simulationId: sim.id } 
+                })}
+              >
                 <TableCell className="font-medium text-xs text-muted-foreground">
                   {new Date(sim.created_at * 1000).toLocaleString()}
                 </TableCell>
@@ -232,6 +266,28 @@ function SimulationHistory() {
                 </TableCell>
                 <TableCell className="text-right font-mono text-xs text-muted-foreground">
                   {sim.time_elapsed.toFixed(1)}s
+                </TableCell>
+                
+                {/* Columna de Acciones */}
+                <TableCell className="text-center">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                    
+                    // 3. MODIFICADO: Stop Propagation para evitar navegar al borrar
+                    onClick={(e) => {
+                      e.stopPropagation(); // <--- ESTO EVITA QUE SE ABRA EL DETALLE
+                      handleDelete(sim.id);
+                    }}
+                    
+                    disabled={deleteMutation.isPending}
+                    title="Eliminar simulación"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                    </svg>
+                  </Button>
                 </TableCell>
               </TableRow>
             ))
