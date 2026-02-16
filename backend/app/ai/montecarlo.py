@@ -185,6 +185,7 @@ def _simulate(board, last_player_who_moved, use_random, heuristic_type):
         current_board = res.board_state
         if res.current_turn:
             current_turn = res.current_turn
+        steps_simulated += 1
 
     b = sum(r.count(1) for r in current_board)
     w = sum(r.count(2) for r in current_board)
