@@ -266,7 +266,7 @@ class MonteCarloParams(BaseModel):
         default=1.41, description="Constante C de exploración"
     )
     time_limit: float = Field(
-        default=4.5, ge=0.1, le=120.0, description="Tiempo límite en segundos"
+        default=4.5, ge=0.1, le=10000.0, description="Tiempo límite en segundos"
     )
 
 

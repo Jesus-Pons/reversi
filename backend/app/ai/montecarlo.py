@@ -138,6 +138,9 @@ def _simulate(board, last_player_who_moved, use_random, heuristic_type):
     current_board = [r[:] for r in board]
     current_turn = 3 - last_player_who_moved
 
+    HEURISTIC_DEPTH_LIMIT = 5
+    steps_simulated = 0
+
     while True:
         valid_moves = logic.get_valid_moves(current_board, current_turn)
 
@@ -149,28 +152,32 @@ def _simulate(board, last_player_who_moved, use_random, heuristic_type):
 
         move_to_make = None
 
-        if use_random:
+        is_fast_mode = use_random or steps_simulated >= HEURISTIC_DEPTH_LIMIT
+
+        if is_fast_mode:
             # Opción A: Random Puro (Heurística = NONE)
             move_to_make = random.choice(valid_moves)
         else:
-            # Opción B: Greedy Guiado (Heurística = STATIC/MOBILITY...)
-            best_score = -float("inf")
-            best_moves = []
+            epsilon = 0.15
+            if random.random() < epsilon:
+                move_to_make = random.choice(valid_moves)
+            else:
+                best_score = -float("inf")
+                best_moves = []
 
-            for m in valid_moves:
-                temp_res = logic.apply_move(current_board, m[0], m[1], current_turn)
-                # Reutilizamos la lógica común
-                score = evaluate_board(
-                    temp_res.board_state, current_turn, heuristic_type
-                )
+                for m in valid_moves:
+                    temp_res = logic.apply_move(current_board, m[0], m[1], current_turn)
+                    score = evaluate_board(
+                        temp_res.board_state, current_turn, heuristic_type
+                    )
 
-                if score > best_score:
-                    best_score = score
-                    best_moves = [m]
-                elif score == best_score:
-                    best_moves.append(m)
+                    if score > best_score:
+                        best_score = score
+                        best_moves = [m]
+                    elif score == best_score:
+                        best_moves.append(m)
 
-            move_to_make = random.choice(best_moves)
+                move_to_make = random.choice(best_moves)
 
         res = logic.apply_move(
             current_board, move_to_make[0], move_to_make[1], current_turn
