@@ -183,18 +183,28 @@ function NewSimulationPanel() {
 
 function SimulationHistory() {
   const queryClient = useQueryClient()
-  const navigate = useNavigate() // <--- Asegúrate de tener esto
+  const navigate = useNavigate()
   
+  const [page, setPage] = useState(1)
+  const limit = 10 
+
   const { data, isLoading } = useQuery({
-    queryKey: ['simulations'], 
-    queryFn: () => SimulationService.readSimulations({ limit: 50 })
+    queryKey: ['simulations', page],
+    queryFn: () => SimulationService.readSimulations({ 
+      skip: (page - 1) * limit, 
+      limit: limit 
+    })
   })
 
-  // ... (deleteMutation se queda igual) ...
+  const totalPages = data?.count ? Math.ceil(data.count / limit) : 1
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => SimulationService.deleteSimulation({ simulationId: id }), 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['simulations'] })
+      if (data?.data.length === 1 && page > 1) {
+        setPage(page - 1)
+      }
     },
     onError: (err) => {
       console.error("Error al borrar:", err)
@@ -211,89 +221,113 @@ function SimulationHistory() {
   if (isLoading) return <div className="text-center py-10 text-muted-foreground animate-pulse">Cargando historial...</div>
 
   return (
-    <div className="rounded-xl border shadow-sm overflow-hidden bg-white dark:bg-gray-950">
-      <Table>
-        <TableHeader className="bg-gray-50 dark:bg-gray-900">
-          <TableRow>
-            {/* ... (Encabezados iguales) ... */}
-            <TableHead className="w-[180px]">Fecha</TableHead>
-            <TableHead>Negras (Config)</TableHead>
-            <TableHead>Blancas (Config)</TableHead>
-            <TableHead className="text-center w-[100px]">Total</TableHead>
-            <TableHead className="text-center w-[200px]">Resultados (N - B - E)</TableHead>
-            <TableHead className="text-right w-[100px]">Tiempo</TableHead>
-            <TableHead className="text-center w-[80px]">Acciones</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data?.data.length === 0 ? (
+    <div className="rounded-xl border shadow-sm overflow-hidden bg-white dark:bg-gray-950 flex flex-col">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader className="bg-gray-50 dark:bg-gray-900">
             <TableRow>
-              <TableCell colSpan={7} className="text-center h-32 text-muted-foreground">
-                No hay simulaciones registradas en tu historial.
-              </TableCell>
+              <TableHead className="w-[180px]">Fecha</TableHead>
+              <TableHead>Negras (Config)</TableHead>
+              <TableHead>Blancas (Config)</TableHead>
+              <TableHead className="text-center w-[100px]">Total</TableHead>
+              <TableHead className="text-center w-[200px]">Resultados (N - B - E)</TableHead>
+              <TableHead className="text-right w-[100px]">Tiempo</TableHead>
+              <TableHead className="text-center w-[80px]">Acciones</TableHead>
             </TableRow>
-          ) : (
-            data?.data.map((sim) => (
-              <TableRow 
-                key={sim.id} 
-                // 1. AÑADIDO: cursor-pointer para feedback visual
-                className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors cursor-pointer"
-                
-                // 2. AÑADIDO: Navegación al hacer click en la fila
-                onClick={() => navigate({ 
-                  to: '/simulation/$simulationId', 
-                  params: { simulationId: sim.id } 
-                })}
-              >
-                <TableCell className="font-medium text-xs text-muted-foreground">
-                  {new Date(sim.created_at * 1000).toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  <BotSummary config={sim.bot_black} color="black" />
-                </TableCell>
-                <TableCell>
-                  <BotSummary config={sim.bot_white} color="white" />
-                </TableCell>
-                <TableCell className="text-center font-mono font-bold">{sim.num_games}</TableCell>
-                <TableCell className="text-center">
-                  <div className="flex justify-center items-center gap-3 font-bold text-sm bg-gray-100 dark:bg-gray-800 py-1 px-3 rounded-full w-fit mx-auto">
-                    <span className="text-emerald-600 dark:text-emerald-400" title="Victorias Negras">{sim.black_wins}</span>
-                    <span className="text-gray-300 text-xs">|</span>
-                    <span className="text-blue-600 dark:text-blue-400" title="Victorias Blancas">{sim.white_wins}</span>
-                    <span className="text-gray-300 text-xs">|</span>
-                    <span className="text-gray-500" title="Empates">{sim.draws}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                  {sim.time_elapsed.toFixed(1)}s
-                </TableCell>
-                
-                {/* Columna de Acciones */}
-                <TableCell className="text-center">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                    
-                    // 3. MODIFICADO: Stop Propagation para evitar navegar al borrar
-                    onClick={(e) => {
-                      e.stopPropagation(); // <--- ESTO EVITA QUE SE ABRA EL DETALLE
-                      handleDelete(sim.id);
-                    }}
-                    
-                    disabled={deleteMutation.isPending}
-                    title="Eliminar simulación"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                    </svg>
-                  </Button>
+          </TableHeader>
+          <TableBody>
+            {data?.data.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center h-32 text-muted-foreground">
+                  No hay simulaciones registradas en tu historial.
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              data?.data.map((sim) => (
+                <TableRow 
+                  key={sim.id} 
+                  className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors cursor-pointer"
+                  onClick={() => navigate({ 
+                    to: '/simulation/$simulationId', 
+                    params: { simulationId: sim.id } 
+                  })}
+                >
+                  <TableCell className="font-medium text-xs text-muted-foreground">
+                    {new Date(sim.created_at * 1000).toLocaleString()}
+                  </TableCell>
+                  <TableCell>
+                    <BotSummary config={sim.bot_black} color="black" />
+                  </TableCell>
+                  <TableCell>
+                    <BotSummary config={sim.bot_white} color="white" />
+                  </TableCell>
+                  <TableCell className="text-center font-mono font-bold">{sim.num_games}</TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex justify-center items-center gap-3 font-bold text-sm bg-gray-100 dark:bg-gray-800 py-1 px-3 rounded-full w-fit mx-auto">
+                      <span className="text-emerald-600 dark:text-emerald-400" title="Victorias Negras">{sim.black_wins}</span>
+                      <span className="text-gray-300 text-xs">|</span>
+                      <span className="text-blue-600 dark:text-blue-400" title="Victorias Blancas">{sim.white_wins}</span>
+                      <span className="text-gray-300 text-xs">|</span>
+                      <span className="text-gray-500" title="Empates">{sim.draws}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                    {sim.time_elapsed.toFixed(1)}s
+                  </TableCell>
+                  
+                  <TableCell className="text-center">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(sim.id);
+                      }}
+                      disabled={deleteMutation.isPending}
+                      title="Eliminar simulación"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                      </svg>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* 3. Controles de Paginación */}
+      {data && data.count > 0 && (
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/20">
+          <div className="text-sm text-muted-foreground">
+            Mostrando {data.data.length} de {data.count} simulaciones en total
+          </div>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1 || isLoading}
+            >
+              Anterior
+            </Button>
+            <div className="text-sm font-medium">
+              Página {page} de {totalPages}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages || isLoading}
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
