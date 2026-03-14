@@ -261,7 +261,7 @@ class AlphaBetaParams(BaseModel):
 
 
 class MonteCarloParams(BaseModel):
-    iterations: int = Field(..., ge=10, le=10000, description="Número de simulaciones")
+    iterations: int = Field(..., ge=5, le=10000, description="Número de simulaciones")
     exploration_constant: float = Field(
         default=1.41, description="Constante C de exploración"
     )
