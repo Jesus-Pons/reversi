@@ -3,7 +3,6 @@ import React from 'react';
 interface StatusBannerProps {
   winner: 'black' | 'white' | 'draw' | null;
   onRestart?: () => void;
-  // Ya no usamos 'message' aquí
 }
 
 export const StatusBanner: React.FC<StatusBannerProps> = ({ winner, onRestart }) => {

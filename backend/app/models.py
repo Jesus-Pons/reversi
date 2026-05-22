@@ -10,7 +10,6 @@ from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
 
-# Shared properties
 class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
     is_active: bool = True
@@ -18,7 +17,6 @@ class UserBase(SQLModel):
     full_name: str | None = Field(default=None, max_length=255)
 
 
-# Properties to receive via API on creation
 class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=128)
 
@@ -29,7 +27,6 @@ class UserRegister(SQLModel):
     full_name: str | None = Field(default=None, max_length=255)
 
 
-# Properties to receive via API on update, all are optional
 class UserUpdate(UserBase):
     email: EmailStr | None = Field(default=None, max_length=255)  # type: ignore
     password: str | None = Field(default=None, min_length=8, max_length=128)
@@ -45,7 +42,6 @@ class UpdatePassword(SQLModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
-# Database model, database table inferred from class name
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
@@ -67,7 +63,6 @@ class User(UserBase, table=True):
     )
 
 
-# Properties to return via API, id is always required
 class UserPublic(UserBase):
     id: uuid.UUID
 
@@ -77,18 +72,15 @@ class UsersPublic(SQLModel):
     count: int
 
 
-# Generic message
 class Message(SQLModel):
     message: str
 
 
-# JSON payload containing access token
 class Token(SQLModel):
     access_token: str
     token_type: str = "bearer"
 
 
-# Contents of JWT token
 class TokenPayload(SQLModel):
     sub: str | None = None
 
@@ -98,22 +90,16 @@ class NewPassword(SQLModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
-# Reversi
-
-
-# --- ENUMS ---
 class AIAlgorithm(str, PyEnum):
     RANDOM = "random"
     ALPHABETA = "alphabeta"
     MONTECARLO = "montecarlo"
-    QLEARNING = "qlearning"
 
 
 class AIHeuristic(str, PyEnum):
-    # Para AlphaBeta / Montecarlo
-    STATIC_WEIGHTS = "static_weights"  # Matriz fija de valores
-    MOBILITY_BASED = "mobility_based"  # Prioriza tener muchos movimientos
-    HYBRID = "hybrid"  # Mezcla de ambas
+    STATIC_WEIGHTS = "static_weights"
+    MOBILITY_BASED = "mobility_based"
+    HYBRID = "hybrid"
     NONE = "none"
 
 
@@ -128,9 +114,6 @@ class Winner(str, PyEnum):
     DRAW = "draw"
 
 
-# --- MODELOS ---
-
-
 class AIConfig(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     algorithm: AIAlgorithm = Field(sa_column=Column(SAEnum(AIAlgorithm)))
@@ -142,7 +125,6 @@ class AIConfig(SQLModel, table=True):
         default=AIHeuristic.NONE,
     )
 
-    # Relaciones
     config_games_as_black: list["Game"] = Relationship(
         back_populates="bot_black",
         sa_relationship_kwargs={"foreign_keys": "Game.bot_black_id"},
@@ -164,7 +146,6 @@ class AIConfig(SQLModel, table=True):
 class Game(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
 
-    # Foreign Keys
     owner_id: uuid.UUID = Field(foreign_key="user.id", ondelete="CASCADE")
     player_black_id: uuid.UUID | None = Field(default=None, foreign_key="user.id")
     bot_black_id: uuid.UUID | None = Field(default=None, foreign_key="aiconfig.id")
@@ -211,8 +192,8 @@ class Moves(SQLModel, table=True):
     move_number: int
     player: Turn = Field(sa_column=Column(SAEnum(Turn)))
     position: List[Any] | None = Field(default=None, sa_column=Column(JSON))
-    execution_time: float | None = Field(default=None)  # Segundos
-    memory_used: float | None = Field(default=None)  # MB
+    execution_time: float | None = Field(default=None)
+    memory_used: float | None = Field(default=None)
 
     game: Game = Relationship(back_populates="moves")
 
@@ -221,33 +202,27 @@ class Simulation(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: float = Field(default_factory=time.time)
 
-    # Inputs guardados
     num_games: int
     user_id: uuid.UUID = Field(foreign_key="user.id", ondelete="CASCADE")
     bot_black_id: uuid.UUID = Field(foreign_key="aiconfig.id")
     bot_white_id: uuid.UUID = Field(foreign_key="aiconfig.id")
 
-    # Resultados
     black_wins: int
     white_wins: int
     draws: int
     time_elapsed: float
 
-    # Relaciones
     user: "User" = Relationship(back_populates="simulations")
     bot_black: "AIConfig" = Relationship(
-        back_populates="simulations_as_black",  # <--- Coincide con AIConfig
+        back_populates="simulations_as_black",
         sa_relationship_kwargs={"foreign_keys": "Simulation.bot_black_id"},
     )
 
     bot_white: "AIConfig" = Relationship(
-        back_populates="simulations_as_white",  # <--- Coincide con AIConfig
+        back_populates="simulations_as_white",
         sa_relationship_kwargs={"foreign_keys": "Simulation.bot_white_id"},
     )
     games: list["Game"] = Relationship(back_populates="simulation", cascade_delete=True)
-
-
-# Pydantic Models
 
 
 class AlphaBetaParams(BaseModel):
@@ -270,18 +245,10 @@ class MonteCarloParams(BaseModel):
     )
 
 
-class QLearningParams(BaseModel):
-    learning_rate: float = Field(default=0.1, ge=0.0, le=1.0)
-    discount_factor: float = Field(default=0.9, ge=0.0, le=1.0)
-    epsilon: float = Field(
-        default=0.1, ge=0.0, le=1.0, description="Probabilidad de exploración"
-    )
-
-
 class ConfigAlphaBeta(BaseModel):
-    algorithm: Literal[AIAlgorithm.ALPHABETA]  # <--- El discriminador
+    algorithm: Literal[AIAlgorithm.ALPHABETA]
     heuristic: AIHeuristic
-    parameters: AlphaBetaParams  # <--- Obliga a usar params de AlphaBeta
+    parameters: AlphaBetaParams
 
 
 class ConfigMonteCarlo(BaseModel):
@@ -290,20 +257,14 @@ class ConfigMonteCarlo(BaseModel):
     parameters: MonteCarloParams
 
 
-class ConfigQLearning(BaseModel):
-    algorithm: Literal[AIAlgorithm.QLEARNING]
-    heuristic: AIHeuristic
-    parameters: QLearningParams
-
-
 class ConfigRandom(BaseModel):
     algorithm: Literal[AIAlgorithm.RANDOM]
-    heuristic: AIHeuristic = AIHeuristic.NONE  # Random suele ignorar heurística
+    heuristic: AIHeuristic = AIHeuristic.NONE
     parameters: dict = {}
 
 
 AIConfigInput = Annotated[
-    Union[ConfigAlphaBeta, ConfigMonteCarlo, ConfigQLearning, ConfigRandom],
+    Union[ConfigAlphaBeta, ConfigMonteCarlo, ConfigRandom],
     Field(discriminator="algorithm"),
 ]
 
@@ -338,10 +299,8 @@ class GamePublic(BaseModel):
     score_white: int
     current_turn: Turn
     winner: Winner | None
-    # Devolvemos objetos simplificados de usuario
     player_black: UserPublic | None
     player_white: UserPublic | None
-    # No devolvemos toda la config de la IA, a veces solo el ID o el nombre basta
     bot_black_id: uuid.UUID | None
     bot_white_id: uuid.UUID | None
 
@@ -349,9 +308,9 @@ class GamePublic(BaseModel):
 
 
 class BotMoveResponse(BaseModel):
-    game: GamePublic  # El estado resultante
-    move_made: List[int] | None  # La coordenada donde movió (None si pasó turno)
-    message: str  # Ej: "AlphaBeta movió a D3 en 1.5s"
+    game: GamePublic
+    move_made: List[int] | None
+    message: str
     execution_time: float
     memory_peak_mb: float
 
@@ -360,8 +319,8 @@ class GameStateResult(BaseModel):
     board_state: List[List[int]]
     score_black: int
     score_white: int
-    current_turn: Optional[int]  # 1, 2, o None (Game Over)
-    winner: Optional[str]  # "black", "white", "draw" o None
+    current_turn: Optional[int]
+    winner: Optional[str]
 
 
 class SimulationRequest(BaseModel):

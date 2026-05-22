@@ -36,20 +36,15 @@ def get_ai_move(board, player, config_model):
     """
     algo = config_model.algorithm
 
-    # 1. Normalizar parámetros a diccionario
     raw_params = config_model.parameters
     if hasattr(raw_params, "model_dump"):
         params = raw_params.model_dump()
     else:
-        # Si es un dict o None, hacemos copia para no mutar el original
         params = dict(raw_params) if raw_params else {}
 
-    # 2. INYECCIÓN CRÍTICA: Meter la heurística dentro de params
-    # Si no, alphabeta/montecarlo no saben cuál usar
     if hasattr(config_model, "heuristic"):
         params["heuristic"] = config_model.heuristic
 
-    # 3. Llamar al algoritmo correspondiente
     if algo == AIAlgorithm.ALPHABETA:
         return alphabeta.get_move(board, player, params)
     elif algo == AIAlgorithm.MONTECARLO:
@@ -57,25 +52,17 @@ def get_ai_move(board, player, config_model):
     elif algo == AIAlgorithm.RANDOM:
         valid = logic.get_valid_moves(board, player)
         return random.choice(valid) if valid else None
-    elif algo == AIAlgorithm.QLEARNING:
-        # Placeholder por si implementas QLearning
-        valid = logic.get_valid_moves(board, player)
-        return random.choice(valid) if valid else None
-    else:
-        # Fallback seguro
-        valid = logic.get_valid_moves(board, player)
-        return random.choice(valid) if valid else None
+    valid = logic.get_valid_moves(board, player)
+    return random.choice(valid) if valid else None
 
 
 def run_simulation_task(simulation_id: uuid.UUID, request: SimulationRequest):
     with Session(engine) as session:
         try:
-            # 1. Recuperar datos de configuración
             sim_db = session.get(Simulation, simulation_id)
             if not sim_db:
                 return
 
-            # Preparamos params (igual que antes...)
             params_black = dict(sim_db.bot_black.parameters or {})
             params_black["heuristic"] = sim_db.bot_black.heuristic
             params_white = dict(sim_db.bot_white.parameters or {})
@@ -84,10 +71,8 @@ def run_simulation_task(simulation_id: uuid.UUID, request: SimulationRequest):
             start_sim_time = time.time()
             results = {"black": 0, "white": 0, "draw": 0}
 
-            # --- BUCLE DE PARTIDAS ---
             for i in range(request.num_games):
 
-                # A. CREAR PARTIDA REAL EN BD (Necesario para tener game_id en Moves)
                 game_db = Game(
                     owner_id=sim_db.user_id,
                     bot_black_id=sim_db.bot_black_id,
@@ -100,9 +85,8 @@ def run_simulation_task(simulation_id: uuid.UUID, request: SimulationRequest):
                 )
                 session.add(game_db)
                 session.commit()
-                session.refresh(game_db)  # Obtenemos el ID generado
+                session.refresh(game_db)
 
-                # Variables locales para velocidad
                 board = game_db.board_state
                 current_turn = 1
                 game_over = False
@@ -110,13 +94,11 @@ def run_simulation_task(simulation_id: uuid.UUID, request: SimulationRequest):
 
                 move_counter = 0
 
-                # --- BUCLE DE TURNOS (JUGADA A JUGADA) ---
                 while not game_over:
 
                     move_counter += 1
                     player_id = current_turn
 
-                    # Determinar quién juega
                     if player_id == 1:
                         algo = sim_db.bot_black.algorithm
                         params = params_black
@@ -124,36 +106,26 @@ def run_simulation_task(simulation_id: uuid.UUID, request: SimulationRequest):
                         algo = sim_db.bot_white.algorithm
                         params = params_white
 
-                    # B. LLAMADA CRÍTICA: Aquí obtenemos Tiempo y RAM
-                    # move_coords: [fila, col] o None
-                    # time_taken: float (segundos)
-                    # memory_mb: float (MB)
                     move_coords, time_taken, memory_mb = ai.select_best_move(
                         board=board, player=player_id, algorithm=algo, parameters=params
                     )
 
-                    # C. GUARDAR EL MOVIMIENTO CON ESTADÍSTICAS
-                    # Guardamos INCLUSO si es un "Pass" (move_coords es None),
-                    # porque tu tutor querrá saber cuánto tardó la IA en decidir pasar.
                     new_move = Moves(
                         game_id=game_db.id,
-                        move_number=move_counter,  # O usar un contador local 'turn_count'
+                        move_number=move_counter,
                         player=Turn.BLACK if player_id == 1 else Turn.WHITE,
                         position=move_coords,
-                        # --- DATOS DEL TFG ---
                         execution_time=time_taken,
                         memory_used=memory_mb,
                     )
                     session.add(new_move)
 
-                    # D. APLICAR LÓGICA DE JUEGO
                     if move_coords:
                         consecutive_passes = 0
                         res = logic.apply_move(
                             board, move_coords[0], move_coords[1], player_id
                         )
 
-                        # Actualizamos estado visual de la partida
                         board = res.board_state
                         game_db.board_state = res.board_state
                         game_db.score_black = res.score_black
@@ -178,12 +150,9 @@ def run_simulation_task(simulation_id: uuid.UUID, request: SimulationRequest):
                         else:
                             game_over = True
                     else:
-                        # Lógica de Pasar Turno
                         consecutive_passes += 1
                         if consecutive_passes >= 2:
                             game_over = True
-                            # Calcular ganador por conteo final...
-                            # (Lógica de conteo igual que antes)
                             b_c = sum(r.count(1) for r in board)
                             w_c = sum(r.count(2) for r in board)
                             game_db.score_black = b_c
@@ -204,13 +173,10 @@ def run_simulation_task(simulation_id: uuid.UUID, request: SimulationRequest):
                                 Turn.BLACK if current_turn == 1 else Turn.WHITE
                             )
 
-                    # Guardamos estado intermedio del juego (Opcional: hacer commit aquí ralentiza mucho)
                     session.add(game_db)
 
-                # FIN DE LA PARTIDA: Hacemos commit de todos los Moves y el Game final
                 session.commit()
 
-                # Actualizar progreso global de la simulación
                 sim_db.black_wins = results["black"]
                 sim_db.white_wins = results["white"]
                 sim_db.draws = results["draw"]
@@ -233,7 +199,6 @@ def run_simulation(
     """
     Inicia una simulación en segundo plano. Devuelve inmediatamente el objeto 'pendiente'.
     """
-    # 1. Crear Configuración de BOT NEGRO en BD
     raw_params_black = request.bot_black.parameters
     final_params_black = (
         raw_params_black.model_dump()
@@ -248,7 +213,6 @@ def run_simulation(
     )
     session.add(bot_black_db)
 
-    # 2. Crear Configuración de BOT BLANCO en BD
     raw_params_white = request.bot_white.parameters
     final_params_white = (
         raw_params_white.model_dump()
@@ -263,12 +227,10 @@ def run_simulation(
     )
     session.add(bot_white_db)
 
-    # Commit parcial para obtener IDs de los bots
     session.commit()
     session.refresh(bot_black_db)
     session.refresh(bot_white_db)
 
-    # 3. Crear el registro de Simulación (Inicialmente vacía/pendiente)
     simulation_db = Simulation(
         user_id=current_user.id,
         bot_black_id=bot_black_db.id,
@@ -283,10 +245,8 @@ def run_simulation(
     session.commit()
     session.refresh(simulation_db)
 
-    # 4. Lanzar la tarea en segundo plano
     background_tasks.add_task(run_simulation_task, simulation_db.id, request)
 
-    # 5. Responder rápido al usuario
     return simulation_db
 
 
@@ -307,7 +267,6 @@ def read_simulations(
     statement = (
         select(Simulation)
         .where(Simulation.user_id == current_user.id)
-        # Importante: Carga los objetos AIConfig para el frontend
         .options(selectinload(Simulation.bot_black), selectinload(Simulation.bot_white))
         .order_by(Simulation.created_at.desc())
         .offset(skip)
@@ -331,7 +290,6 @@ def delete_simulation(
     if not simulation:
         raise HTTPException(status_code=404, detail="Simulation not found")
 
-    # Seguridad: Solo el dueño (o un superuser) puede borrarla
     if simulation.user_id != current_user.id and not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
@@ -354,11 +312,9 @@ def get_simulation_details(
     if not simulation:
         raise HTTPException(status_code=404, detail="Simulation not found")
 
-    # Seguridad: Solo el dueño (o un superuser) puede verla
     if simulation.user_id != current_user.id and not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
-    # Cargar partidas y movimientos relacionados
     statement = (
         select(
             Moves.game_id,
@@ -375,7 +331,6 @@ def get_simulation_details(
 
     game_stats_map = {}
 
-    # Acumuladores globales
     total_time_black = 0.0
     total_ram_black = 0.0
     count_moves_black = 0
@@ -386,7 +341,6 @@ def get_simulation_details(
 
     for row in stats_rows:
         g_id, player, avg_time, avg_ram, count = row
-        # avg_time puede ser None si no hubo movimientos
         avg_time = avg_time or 0.0
         avg_ram = avg_ram or 0.0
 
@@ -399,7 +353,6 @@ def get_simulation_details(
             "count": count,
         }
 
-        # Sumar a globales (ponderado por número de movimientos)
         if player == Turn.BLACK:
             total_time_black += avg_time * count
             total_ram_black += avg_ram * count
@@ -409,15 +362,12 @@ def get_simulation_details(
             total_ram_white += avg_ram * count
             count_moves_white += count
 
-    # 4. Construir la lista de GameStats
     games_response = []
-    # Traemos las partidas ordenadas
     games_db = session.exec(
         select(Game).where(Game.simulation_id == simulation_id).order_by(Game.id)
     ).all()
 
     for game in games_db:
-        # Recuperar stats calculadas o poner 0
         stats = game_stats_map.get(game.id, {})
         sb = stats.get(Turn.BLACK, {"avg_time": 0, "avg_ram": 0})
         sw = stats.get(Turn.WHITE, {"avg_time": 0, "avg_ram": 0})
@@ -425,7 +375,7 @@ def get_simulation_details(
         games_response.append(
             GameStats(
                 id=game.id,
-                move_count=len(game.moves),  # O sumar counts de sb y sw
+                move_count=len(game.moves),
                 winner=game.winner.value if game.winner else None,
                 score_black=game.score_black,
                 score_white=game.score_white,
@@ -436,7 +386,6 @@ def get_simulation_details(
             )
         )
 
-    # 5. Calcular Globales finales
     global_avg_time_b = (
         (total_time_black / count_moves_black) if count_moves_black > 0 else 0
     )

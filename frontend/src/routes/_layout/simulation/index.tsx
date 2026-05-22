@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { SimulationService } from "@/client/sdk.gen"
 import { useNavigate } from "@tanstack/react-router"
-// IMPORTANTE: Importamos SimulationPublic también
 import type { Simulation, SimulationPublic } from "@/client/types.gen"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -105,7 +104,6 @@ function NewSimulationPanel() {
       return res
     },
     onSuccess: (data) => {
-      // CORRECCIÓN 1: Verificamos que data.id exista antes de asignarlo
       if (data.id) {
         setCurrentSimId(data.id)
       }
@@ -299,7 +297,6 @@ function SimulationHistory() {
         </Table>
       </div>
 
-      {/* 3. Controles de Paginación */}
       {data && data.count > 0 && (
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/20">
           <div className="text-sm text-muted-foreground">
@@ -367,17 +364,11 @@ function BotSummary({ config, color }: { config: any, color: 'black' | 'white' }
         {config.parameters?.time_limit !== undefined && (
            <span title="Tiempo límite" className="bg-gray-100 dark:bg-gray-800 px-1 rounded">t:{config.parameters.time_limit}s</span>
         )}
-        {config.parameters?.epsilon !== undefined && (
-           <span title="Exploración" className="bg-gray-100 dark:bg-gray-800 px-1 rounded">ε:{config.parameters.epsilon}</span>
-        )}
       </div>
     </div>
   )
 }
 
-// CORRECCIÓN 2: Cambiamos el tipo de prop a SimulationPublic | Simulation
-// para que acepte tanto lo que devuelve el historial como la mutación.
-// Usamos Partial o Pick si quieres ser más estricto, pero Union es lo más fácil aquí.
 function ResultsCard({ stats }: { stats: SimulationPublic | Simulation }) {
   const total = stats.black_wins + stats.white_wins + stats.draws
   const safeTotal = total > 0 ? total : 1

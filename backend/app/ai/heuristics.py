@@ -1,7 +1,5 @@
 from app import logic
 
-# --- MAPA DE CALOR ESTÁTICO ---
-# Esquinas (100) valiosas, casillas X (-20/-50) peligrosas.
 POSITION_WEIGHTS = [
     [100, -20, 10, 5, 5, 10, -20, 100],
     [-20, -50, -2, -2, -2, -2, -50, -20],
@@ -34,13 +32,11 @@ def eval_mobility(board, player_id):
     my_moves = len(logic.get_valid_moves(board, player_id))
     op_moves = len(logic.get_valid_moves(board, opponent_id))
 
-    # Evitar división por cero si usamos ratios, aquí usamos diferencia simple multiplicada
     return 10 * (my_moves - op_moves)
 
 
 def eval_hybrid(board, player_id):
     """Combina posición (estrategia) y movilidad (táctica)."""
-    # 70% peso a posición, 30% a movilidad (ajustable)
     pos_score = eval_static_weights(board, player_id)
     mob_score = eval_mobility(board, player_id)
     return pos_score + mob_score
@@ -54,7 +50,6 @@ def evaluate_board(board, player_id, heuristic_type="static_weights"):
         return eval_mobility(board, player_id)
     elif heuristic_type == "hybrid":
         return eval_hybrid(board, player_id)
-    # Default y "static_weights"
     return eval_static_weights(board, player_id)
 
 

@@ -16,34 +16,23 @@ class Node:
     def __init__(self, board, parent=None, move=None, player_who_moved=None):
         self.board = board
         self.parent = parent
-        self.move = move  # La jugada que llevó a este estado
-        self.player_who_moved = player_who_moved  # Quién hizo la jugada (1 o 2)
+        self.move = move
+        self.player_who_moved = player_who_moved
 
         self.children = []
         self.wins = 0.0
         self.visits = 0
 
-        # Movimientos no explorados desde este estado
-        # Nota: Calculamos los movimientos para el SIGUIENTE jugador
         self.untried_moves = []
         self._initialize_untried_moves()
 
     def _initialize_untried_moves(self):
-        # Determinamos de quién es el turno basándonos en quien movió antes.
-        # Si nadie movió (raíz), asumimos que logic manejará el turno correcto externamente,
-        # pero para nodos hijos:
         if self.player_who_moved:
             next_player = 3 - self.player_who_moved
         else:
-            # Caso raíz, se seteará externamente o se asume lógica del juego
             return
 
         self.untried_moves = logic.get_valid_moves(self.board, next_player)
-
-        # Si el jugador actual no tiene movimientos (PASS),
-        # pero el juego no ha terminado, añadimos un movimiento "None" (Pass)
-        # o manejamos la lógica de expansión especial.
-        # Simplificación: Si no hay moves, untried queda vacío y será nodo hoja o terminal.
 
     def is_fully_expanded(self):
         return len(self.untried_moves) == 0
@@ -73,13 +62,8 @@ def get_move(board, player, parameters):
     c_param = parameters.get("exploration_constant", 1.41)
     time_limit = parameters.get("time_limit", 4.5)
 
-    # LEER HEURÍSTICA
-    # Si no viene nada, asumimos "none" (Random Rollout por defecto)
     heuristic_type = parameters.get("heuristic", "none")
 
-    # LÓGICA CLAVE:
-    # Si la heurística es "none" (o explícitamente random_rollout), jugamos al azar.
-    # Si es cualquier otra (static, mobility...), usamos simulación guiada.
     use_random = heuristic_type == "none" or heuristic_type == "random_rollout"
 
     root = Node(board, player_who_moved=3 - player)
@@ -91,12 +75,10 @@ def get_move(board, player, parameters):
         if time.time() - start_time > time_limit:
             break
 
-        # 1. Selection
         node = root
         while node.is_fully_expanded() and node.children:
             node = node.best_child(c_param)
 
-        # 2. Expansion
         current_turn_in_node = 3 - node.player_who_moved
         if node.untried_moves is None:
             node.untried_moves = logic.get_valid_moves(node.board, current_turn_in_node)
@@ -113,13 +95,10 @@ def get_move(board, player, parameters):
             node.children.append(child_node)
             node = child_node
 
-        # 3. Simulation
-        # Pasamos el flag derivado 'use_random'
         winner = _simulate(
             node.board, node.player_who_moved, use_random, heuristic_type
         )
 
-        # 4. Backpropagation
         while node:
             node.visits += 1
             if winner == node.player_who_moved:
@@ -155,7 +134,6 @@ def _simulate(board, last_player_who_moved, use_random, heuristic_type):
         is_fast_mode = use_random or steps_simulated >= HEURISTIC_DEPTH_LIMIT
 
         if is_fast_mode:
-            # Opción A: Random Puro (Heurística = NONE)
             move_to_make = random.choice(valid_moves)
         else:
             epsilon = 0.15

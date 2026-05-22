@@ -6,7 +6,6 @@ import { GamesService } from "@/client/sdk.gen"
 import type { Game } from "@/client/types.gen"
 import { Button } from "@/components/ui/button"
 
-// Definimos la ruta /games/
 export const Route = createFileRoute("/_layout/games/")({
   component: GamesDashboard,
 })
@@ -15,11 +14,9 @@ function GamesDashboard() {
   const [games, setGames] = useState<Game[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  // Cargar partidas al entrar
   useEffect(() => {
     const fetchGames = async () => {
       try {
-        // Usamos el SDK para leer mis partidas (limitado a 20 por ejemplo)
         const response = await GamesService.readMyGames({ limit: 20 })
         setGames(response.data)
       } catch (error) {
@@ -34,7 +31,6 @@ function GamesDashboard() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Encabezado */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Mis Partidas</h1>
@@ -43,7 +39,6 @@ function GamesDashboard() {
           </p>
         </div>
         
-        {/* Botón para ir a crear nueva partida (Necesitarás crear esta ruta luego) */}
         <Link to="/games/new">
           <Button className="gap-2">
             <Plus className="size-4" />
@@ -52,7 +47,6 @@ function GamesDashboard() {
         </Link>
       </div>
 
-      {/* Lista de Partidas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {isLoading ? (
           <div className="col-span-full text-center py-10 text-muted-foreground">
@@ -75,7 +69,6 @@ function GamesDashboard() {
   )
 }
 
-// Componente simple para la tarjeta de cada partida
 function GameCard({ game }: { game: Game }) {
   const isFinished = !!game.winner
   

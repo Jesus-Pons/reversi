@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 
-// Definimos la ruta
 export const Route = createFileRoute("/_layout/simulation/$simulationId")({
   component: SimulationDetailsPage,
 })
@@ -18,7 +17,6 @@ function SimulationDetailsPage() {
     queryKey: ['simulation_detail', simulationId],
     queryFn: () => {
       if (!simulationId) throw new Error("ID de simulación inválido")
-      // Usamos la llamada correcta según tu types.gen.ts
       return SimulationService.getSimulationDetails({ simulationId })
     }
   })
@@ -29,7 +27,6 @@ function SimulationDetailsPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4">
       
-      {/* HEADER Y NAVEGACIÓN */}
       <div className="flex justify-between items-center">
         <div>
            <Link to="/simulation">
@@ -47,10 +44,8 @@ function SimulationDetailsPage() {
         </div>
       </div>
 
-      {/* 1. RESUMEN DE RENDIMIENTO (GLOBAL) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* === TARJETA JUGADOR NEGRO === */}
         <Card className="bg-slate-950 text-white border-slate-800 shadow-xl overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-5 text-9xl font-black pointer-events-none">B</div>
             
@@ -105,7 +100,6 @@ function SimulationDetailsPage() {
             </CardContent>
         </Card>
 
-        {/* === TARJETA JUGADOR BLANCO === */}
         <Card className="bg-white text-slate-900 border-slate-200 shadow-xl overflow-hidden relative">
             <div className="absolute top-0 right-0 p-4 opacity-5 text-9xl font-black pointer-events-none text-slate-900">W</div>
 
@@ -160,7 +154,6 @@ function SimulationDetailsPage() {
         </Card>
       </div>
 
-      {/* 2. TABLA DETALLADA DE PARTIDAS */}
       <Card>
         <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -220,7 +213,6 @@ function SimulationDetailsPage() {
   )
 }
 
-// Función auxiliar corregida para aceptar valores opcionales
 function formatHeuristic(text?: string | null) {
     if (!text || text === 'none') return "Ninguna"
     return text.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')

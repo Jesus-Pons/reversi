@@ -1,12 +1,12 @@
 import React from 'react';
-import { Loader2, Swords } from 'lucide-react'; // Importamos iconos
+import { Loader2, Swords } from 'lucide-react';
 import { Disc } from './Disc';
 
 interface ScoreBoardProps {
   scoreBlack: number;
   scoreWhite: number;
   currentTurn: 'black' | 'white';
-  message: string | null; // <--- Nueva prop
+  message: string | null;
 }
 
 export const ScoreBoard: React.FC<ScoreBoardProps> = ({
@@ -18,7 +18,6 @@ export const ScoreBoard: React.FC<ScoreBoardProps> = ({
   return (
     <div className="flex items-center justify-center gap-4 sm:gap-8 mb-6 w-full max-w-2xl px-4">
       
-      {/* --- JUGADOR NEGRO --- */}
       <div
         className={`flex flex-col items-center p-3 sm:p-4 rounded-xl shadow-xl transition-all duration-300 w-28 sm:w-32 border-2 ${
           currentTurn === 'black'
@@ -31,7 +30,6 @@ export const ScoreBoard: React.FC<ScoreBoardProps> = ({
         <span className="text-white text-3xl sm:text-4xl font-black mt-1">{scoreBlack}</span>
       </div>
 
-      {/* --- ZONA CENTRAL (MENSAJES) --- */}
       <div className="flex-1 flex flex-col items-center justify-center min-w-[120px] h-20">
         {message ? (
           <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
@@ -45,14 +43,12 @@ export const ScoreBoard: React.FC<ScoreBoardProps> = ({
             </span>
           </div>
         ) : (
-          /* Estado "Idle" (VS) cuando no hay mensaje específico */
           <div className="text-gray-600 font-black text-2xl opacity-20 select-none">
             VS
           </div>
         )}
       </div>
 
-      {/* --- JUGADOR BLANCO --- */}
       <div
         className={`flex flex-col items-center p-3 sm:p-4 rounded-xl shadow-xl transition-all duration-300 w-28 sm:w-32 border-2 ${
           currentTurn === 'white'

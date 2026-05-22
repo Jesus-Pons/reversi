@@ -10,20 +10,18 @@ import {
   type AIConfigInput 
 } from "@/components/forms/AIParamsSelector"
 
-// 1. Definimos la ruta
 export const Route = createFileRoute("/_layout/games/new")({
   component: NewGamePage,
 })
 
 function NewGamePage() {
   const navigate = useNavigate()
-  const { user } = useAuth() // Obtenemos el usuario logueado para ponerlo como Player 1
+  const { user } = useAuth()
   
   const [opponentType, setOpponentType] = useState<'bot' | 'human'>('bot')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Estado para la configuración del Bot (viene del AIParamsSelector)
   const [botConfig, setBotConfig] = useState<AIConfigInput | null>(null)
 
   const handleSubmit = async () => {
@@ -32,8 +30,6 @@ function NewGamePage() {
     setError(null)
 
     try {
-      // Preparamos el objeto para el Backend
-      // Por defecto: Yo soy Negras (Player 1), el Oponente es Blancas (Player 2)
       const requestBody: any = {
         player_black_id: user.id,
         player_white_id: null,
@@ -47,31 +43,23 @@ function NewGamePage() {
           return
         }
 
-        // TRANSFORMACIÓN DE DATOS (Vital):
-        // El Selector nos da un objeto plano: { algorithm: 'alphabeta', depth: 4 }
-        // La API espera un objeto anidado: { algorithm: 'alphabeta', parameters: { depth: 4 } }
-        
         const { algorithm, heuristic, ...restParams } = botConfig
         
         requestBody.bot_white_config = {
           algorithm: algorithm,
           heuristic: heuristic,
-          parameters: restParams // Aquí van depth, iterations, etc.
+          parameters: restParams
         }
       } else {
-        // Lógica para jugar contra otro humano (Futuro: Selector de usuarios)
-        // Por ahora lo dejamos null para que sea un "asiento vacío" o un modo local
         setError("El modo multijugador humano aún no está implementado en este formulario.")
         setIsSubmitting(false)
         return
       }
 
-      // Llamada a la API
       const newGame = await GamesService.createGame({
         requestBody
       })
 
-      // Redirigir a la partida creada
       navigate({ to: `/games/${newGame.id}` })
 
     } catch (err: any) {
@@ -91,7 +79,6 @@ function NewGamePage() {
 
       <div className="grid gap-6">
         
-        {/* Paso 1: Elegir Color / Usuario (Simplificado a 'Yo soy Negras' por ahora) */}
         <div className="bg-card border rounded-xl p-5 shadow-sm">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <User className="size-5 text-blue-500" />
@@ -103,14 +90,12 @@ function NewGamePage() {
           </div>
         </div>
 
-        {/* Paso 2: Elegir Oponente */}
         <div className="bg-card border rounded-xl p-5 shadow-sm">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Gamepad2 className="size-5 text-amber-500" />
             Oponente (Blancas)
           </h2>
 
-          {/* Tabs simples para elegir tipo de oponente */}
           <div className="flex gap-2 mb-6">
             <button
               onClick={() => setOpponentType('bot')}
@@ -134,7 +119,6 @@ function NewGamePage() {
             </button>
           </div>
 
-          {/* Renderizado Condicional del Selector */}
           {opponentType === 'bot' ? (
             <div className="animate-in fade-in slide-in-from-top-2">
               <AIParamsSelector onChange={setBotConfig} />
@@ -149,14 +133,12 @@ function NewGamePage() {
           )}
         </div>
 
-        {/* Mensaje de Error */}
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm font-medium border border-red-200">
             {error}
           </div>
         )}
 
-        {/* Botón de Acción */}
         <Button 
           onClick={handleSubmit} 
           disabled={isSubmitting}

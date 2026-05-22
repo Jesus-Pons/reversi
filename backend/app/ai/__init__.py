@@ -1,8 +1,7 @@
-# app/ai/__init__.py
 import random
 
 from app import logic
-from app.ai import alphabeta, montecarlo, qlearning  # Importar tus modulos
+from app.ai import alphabeta, montecarlo
 from app.models import AIAlgorithm
 from app.utils import measure_performance
 
@@ -23,8 +22,5 @@ def select_best_move(board, player, algorithm: AIAlgorithm, parameters: dict):
 
     elif algorithm == AIAlgorithm.MONTECARLO:
         return montecarlo.get_move(board, player, parameters)
-
-    elif algorithm == AIAlgorithm.QLEARNING:
-        return qlearning.get_move(board, player, parameters)
 
     return None

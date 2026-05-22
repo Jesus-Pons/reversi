@@ -128,8 +128,8 @@ def verify_password_reset_token(token: str) -> str | None:
 def get_initial_board() -> list[list[int]]:
     board = [[0 for _ in range(8)] for _ in range(8)]
 
-    board[3][3] = 2  # Blanca
-    board[3][4] = 1  # Negra
+    board[3][3] = 2
+    board[3][4] = 1
     board[4][3] = 1
     board[4][4] = 2
 

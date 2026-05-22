@@ -107,7 +107,6 @@ def create_game(
         black_bot_config = AIConfig(
             algorithm=game_in.bot_black_config.algorithm,
             heuristic=game_in.bot_black_config.heuristic,
-            # ESTO ES CLAVE: Convertimos el objeto AlphaBetaParams a dict
             parameters=final_params_black,
         )
         session.add(black_bot_config)

@@ -2,7 +2,7 @@
 
 export const AIAlgorithmSchema = {
     type: 'string',
-    enum: ['random', 'alphabeta', 'montecarlo', 'qlearning'],
+    enum: ['random', 'alphabeta', 'montecarlo'],
     title: 'AIAlgorithm'
 } as const;
 
@@ -77,7 +77,7 @@ export const Body_login_login_access_tokenSchema = {
             anyOf: [
                 {
                     type: 'string',
-                    pattern: 'password'
+                    pattern: '^password$'
                 },
                 {
                     type: 'null'
@@ -91,6 +91,7 @@ export const Body_login_login_access_tokenSchema = {
         },
         password: {
             type: 'string',
+            format: 'password',
             title: 'Password'
         },
         scope: {
@@ -118,6 +119,7 @@ export const Body_login_login_access_tokenSchema = {
                     type: 'null'
                 }
             ],
+            format: 'password',
             title: 'Client Secret'
         }
     },
@@ -199,25 +201,6 @@ export const ConfigMonteCarloSchema = {
     type: 'object',
     required: ['algorithm', 'heuristic', 'parameters'],
     title: 'ConfigMonteCarlo'
-} as const;
-
-export const ConfigQLearningSchema = {
-    properties: {
-        algorithm: {
-            type: 'string',
-            const: 'qlearning',
-            title: 'Algorithm'
-        },
-        heuristic: {
-            '$ref': '#/components/schemas/AIHeuristic'
-        },
-        parameters: {
-            '$ref': '#/components/schemas/QLearningParams'
-        }
-    },
-    type: 'object',
-    required: ['algorithm', 'heuristic', 'parameters'],
-    title: 'ConfigQLearning'
 } as const;
 
 export const ConfigRandomSchema = {
@@ -375,9 +358,6 @@ export const GameCreateSchema = {
                             '$ref': '#/components/schemas/ConfigMonteCarlo'
                         },
                         {
-                            '$ref': '#/components/schemas/ConfigQLearning'
-                        },
-                        {
                             '$ref': '#/components/schemas/ConfigRandom'
                         }
                     ],
@@ -386,7 +366,6 @@ export const GameCreateSchema = {
                         mapping: {
                             alphabeta: '#/components/schemas/ConfigAlphaBeta',
                             montecarlo: '#/components/schemas/ConfigMonteCarlo',
-                            qlearning: '#/components/schemas/ConfigQLearning',
                             random: '#/components/schemas/ConfigRandom'
                         }
                     }
@@ -420,9 +399,6 @@ export const GameCreateSchema = {
                             '$ref': '#/components/schemas/ConfigMonteCarlo'
                         },
                         {
-                            '$ref': '#/components/schemas/ConfigQLearning'
-                        },
-                        {
                             '$ref': '#/components/schemas/ConfigRandom'
                         }
                     ],
@@ -431,7 +407,6 @@ export const GameCreateSchema = {
                         mapping: {
                             alphabeta: '#/components/schemas/ConfigAlphaBeta',
                             montecarlo: '#/components/schemas/ConfigMonteCarlo',
-                            qlearning: '#/components/schemas/ConfigQLearning',
                             random: '#/components/schemas/ConfigRandom'
                         }
                     }
@@ -637,7 +612,7 @@ export const MonteCarloParamsSchema = {
         iterations: {
             type: 'integer',
             maximum: 10000,
-            minimum: 10,
+            minimum: 5,
             title: 'Iterations',
             description: 'Número de simulaciones'
         },
@@ -649,7 +624,7 @@ export const MonteCarloParamsSchema = {
         },
         time_limit: {
             type: 'number',
-            maximum: 120,
+            maximum: 10000,
             minimum: 0.1,
             title: 'Time Limit',
             description: 'Tiempo límite en segundos',
@@ -776,35 +751,6 @@ export const PrivateUserCreateSchema = {
     type: 'object',
     required: ['email', 'password', 'full_name'],
     title: 'PrivateUserCreate'
-} as const;
-
-export const QLearningParamsSchema = {
-    properties: {
-        learning_rate: {
-            type: 'number',
-            maximum: 1,
-            minimum: 0,
-            title: 'Learning Rate',
-            default: 0.1
-        },
-        discount_factor: {
-            type: 'number',
-            maximum: 1,
-            minimum: 0,
-            title: 'Discount Factor',
-            default: 0.9
-        },
-        epsilon: {
-            type: 'number',
-            maximum: 1,
-            minimum: 0,
-            title: 'Epsilon',
-            description: 'Probabilidad de exploración',
-            default: 0.1
-        }
-    },
-    type: 'object',
-    title: 'QLearningParams'
 } as const;
 
 export const SimulationSchema = {
@@ -986,9 +932,6 @@ export const SimulationRequestSchema = {
                     '$ref': '#/components/schemas/ConfigMonteCarlo'
                 },
                 {
-                    '$ref': '#/components/schemas/ConfigQLearning'
-                },
-                {
                     '$ref': '#/components/schemas/ConfigRandom'
                 }
             ],
@@ -998,7 +941,6 @@ export const SimulationRequestSchema = {
                 mapping: {
                     alphabeta: '#/components/schemas/ConfigAlphaBeta',
                     montecarlo: '#/components/schemas/ConfigMonteCarlo',
-                    qlearning: '#/components/schemas/ConfigQLearning',
                     random: '#/components/schemas/ConfigRandom'
                 }
             }
@@ -1012,9 +954,6 @@ export const SimulationRequestSchema = {
                     '$ref': '#/components/schemas/ConfigMonteCarlo'
                 },
                 {
-                    '$ref': '#/components/schemas/ConfigQLearning'
-                },
-                {
                     '$ref': '#/components/schemas/ConfigRandom'
                 }
             ],
@@ -1024,7 +963,6 @@ export const SimulationRequestSchema = {
                 mapping: {
                     alphabeta: '#/components/schemas/ConfigAlphaBeta',
                     montecarlo: '#/components/schemas/ConfigMonteCarlo',
-                    qlearning: '#/components/schemas/ConfigQLearning',
                     random: '#/components/schemas/ConfigRandom'
                 }
             }
@@ -1367,6 +1305,13 @@ export const ValidationErrorSchema = {
         type: {
             type: 'string',
             title: 'Error Type'
+        },
+        input: {
+            title: 'Input'
+        },
+        ctx: {
+            type: 'object',
+            title: 'Context'
         }
     },
     type: 'object',
