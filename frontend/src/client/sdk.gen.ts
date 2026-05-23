@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { GamesReadGamesData, GamesReadGamesResponse, GamesCreateGameData, GamesCreateGameResponse, GamesReadMyGamesData, GamesReadMyGamesResponse, GamesGetGameByIdData, GamesGetGameByIdResponse, GamesGetValidMovesData, GamesGetValidMovesResponse, GamesHumanMoveData, GamesHumanMoveResponse, GamesMakeBotMoveData, GamesMakeBotMoveResponse, GamesGetGameHistoryData, GamesGetGameHistoryResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SimulationRunSimulationData, SimulationRunSimulationResponse, SimulationReadSimulationsData, SimulationReadSimulationsResponse, SimulationDeleteSimulationData, SimulationDeleteSimulationResponse, SimulationGetSimulationDetailsData, SimulationGetSimulationDetailsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { GamesReadGamesData, GamesReadGamesResponse, GamesCreateGameData, GamesCreateGameResponse, GamesReadMyGamesData, GamesReadMyGamesResponse, GamesGetGameByIdData, GamesGetGameByIdResponse, GamesGetValidMovesData, GamesGetValidMovesResponse, GamesHumanMoveData, GamesHumanMoveResponse, GamesMakeBotMoveData, GamesMakeBotMoveResponse, GamesGetGameHistoryData, GamesGetGameHistoryResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SimulationRunSimulationData, SimulationRunSimulationResponse, SimulationReadSimulationsData, SimulationReadSimulationsResponse, SimulationDeleteSimulationData, SimulationDeleteSimulationResponse, SimulationGetSimulationDetailsData, SimulationGetSimulationDetailsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadOpponentsData, UsersReadOpponentsResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class GamesService {
     /**
@@ -491,6 +491,29 @@ export class UsersService {
             url: '/api/v1/users/me/password',
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Opponents
+     * Retrieve active users that can be selected as game opponents.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns UsersPublic Successful Response
+     * @throws ApiError
+     */
+    public static readOpponents(data: UsersReadOpponentsData = {}): CancelablePromise<UsersReadOpponentsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/users/opponents',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
             errors: {
                 422: 'Validation Error'
             }

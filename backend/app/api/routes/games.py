@@ -17,6 +17,7 @@ from app.models import (
     MoveCreate,
     Moves,
     Turn,
+    User,
     ValidMovesResponse,
     Winner,
 )
@@ -86,9 +87,7 @@ def read_my_games(
     return GamesPublic(data=games, count=count)
 
 
-@router.post(
-    "/", dependencies=[Depends(get_current_active_superuser)], response_model=Game
-)
+@router.post("/", response_model=Game)
 def create_game(
     *, session: SessionDep, game_in: GameCreate, current_user: CurrentUser
 ) -> Any:
@@ -96,6 +95,30 @@ def create_game(
     Create new game.
     """
     game = Game(owner_id=current_user.id)
+
+    if game_in.player_black_id and game_in.bot_black_config:
+        raise HTTPException(
+            status_code=400, detail="Black player cannot be both human and AI"
+        )
+    if game_in.player_white_id and game_in.bot_white_config:
+        raise HTTPException(
+            status_code=400, detail="White player cannot be both human and AI"
+        )
+
+    if not game_in.player_black_id and not game_in.bot_black_config:
+        raise HTTPException(status_code=400, detail="Black player is required")
+    if not game_in.player_white_id and not game_in.bot_white_config:
+        raise HTTPException(status_code=400, detail="White player is required")
+
+    if game_in.player_black_id != current_user.id:
+        raise HTTPException(
+            status_code=403, detail="Black player must be the current user"
+        )
+
+    if game_in.player_white_id:
+        white_player = session.get(User, game_in.player_white_id)
+        if not white_player or not white_player.is_active:
+            raise HTTPException(status_code=404, detail="White player not found")
 
     if game_in.bot_black_config:
         final_params_black = {}
@@ -112,7 +135,7 @@ def create_game(
         session.add(black_bot_config)
         game.bot_black = black_bot_config
     else:
-        game.player_black_id = current_user.id
+        game.player_black_id = game_in.player_black_id
 
     if game_in.bot_white_config:
         raw_params_white = game_in.bot_white_config.parameters
@@ -128,7 +151,7 @@ def create_game(
         session.add(white_bot_config)
         game.bot_white = white_bot_config
     else:
-        game.player_white_id = current_user.id
+        game.player_white_id = game_in.player_white_id
 
     session.add(game)
     session.commit()

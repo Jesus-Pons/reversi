@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useState } from "react"
-import { Gamepad2, User, Play, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Gamepad2, User, Play, Loader2, Users } from "lucide-react"
 
-import { GamesService } from "@/client/sdk.gen"
+import { GamesService, UsersService } from "@/client/sdk.gen"
+import type { UserPublic } from "@/client/types.gen"
 import useAuth from "@/hooks/useAuth"
 import { Button } from "@/components/ui/button"
 import { 
@@ -18,11 +19,30 @@ function NewGamePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   
-  const [opponentType, setOpponentType] = useState<'bot' | 'human'>('bot')
+  const [opponentType, setOpponentType] = useState<'bot' | 'online' | 'local'>('bot')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [opponents, setOpponents] = useState<UserPublic[]>([])
+  const [selectedOpponentId, setSelectedOpponentId] = useState<string>("")
 
   const [botConfig, setBotConfig] = useState<AIConfigInput | null>(null)
+
+  useEffect(() => {
+    if (opponentType !== 'online') return
+
+    const fetchOpponents = async () => {
+      try {
+        const response = await UsersService.readOpponents({ limit: 100 })
+        setOpponents(response.data)
+        setSelectedOpponentId((current) => current || response.data[0]?.id || "")
+      } catch (err) {
+        console.error(err)
+        setError("No se pudieron cargar los jugadores disponibles.")
+      }
+    }
+
+    fetchOpponents()
+  }, [opponentType])
 
   const handleSubmit = async () => {
     if (!user?.id) return
@@ -50,10 +70,16 @@ function NewGamePage() {
           heuristic: heuristic,
           parameters: restParams
         }
+      } else if (opponentType === 'online') {
+        if (!selectedOpponentId) {
+          setError("Selecciona un jugador para continuar.")
+          setIsSubmitting(false)
+          return
+        }
+
+        requestBody.player_white_id = selectedOpponentId
       } else {
-        setError("El modo multijugador humano aún no está implementado en este formulario.")
-        setIsSubmitting(false)
-        return
+        requestBody.player_white_id = user.id
       }
 
       const newGame = await GamesService.createGame({
@@ -108,14 +134,24 @@ function NewGamePage() {
               Jugar contra IA
             </button>
             <button
-              onClick={() => setOpponentType('human')}
+              onClick={() => setOpponentType('online')}
               className={`flex-1 py-2 px-4 rounded-lg border font-medium transition-all ${
-                opponentType === 'human' 
+                opponentType === 'online' 
                   ? 'bg-blue-100 border-blue-500 text-blue-900 ring-1 ring-blue-500' 
                   : 'bg-transparent border-gray-200 text-gray-500 hover:bg-gray-50'
               }`}
             >
-              Otro Humano
+              Otro jugador
+            </button>
+            <button
+              onClick={() => setOpponentType('local')}
+              className={`flex-1 py-2 px-4 rounded-lg border font-medium transition-all ${
+                opponentType === 'local' 
+                  ? 'bg-emerald-100 border-emerald-500 text-emerald-900 ring-1 ring-emerald-500' 
+                  : 'bg-transparent border-gray-200 text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              Local
             </button>
           </div>
 
@@ -123,11 +159,32 @@ function NewGamePage() {
             <div className="animate-in fade-in slide-in-from-top-2">
               <AIParamsSelector onChange={setBotConfig} />
             </div>
+          ) : opponentType === 'online' ? (
+            <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Users className="size-4" />
+                Jugador blanco
+              </label>
+              <select
+                value={selectedOpponentId}
+                onChange={(event) => setSelectedOpponentId(event.target.value)}
+                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+              >
+                {opponents.length === 0 ? (
+                  <option value="">No hay jugadores disponibles</option>
+                ) : (
+                  opponents.map((opponent) => (
+                    <option key={opponent.id} value={opponent.id}>
+                      {opponent.full_name || opponent.email}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
           ) : (
-            <div className="text-center p-8 bg-gray-50 border border-dashed rounded-lg">
-              <p className="text-gray-500">
-                Seleccionar un amigo de la lista de usuarios.<br/>
-                <span className="text-xs text-orange-600">(Funcionalidad pendiente de implementar)</span>
+            <div className="text-center p-8 bg-emerald-50 border border-dashed border-emerald-200 rounded-lg">
+              <p className="text-emerald-800 font-medium">
+                Modo local: jugarás ambos colores desde esta cuenta alternando turnos.
               </p>
             </div>
           )}

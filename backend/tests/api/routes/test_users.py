@@ -168,6 +168,30 @@ def test_retrieve_users(
         assert "email" in item
 
 
+def test_retrieve_opponents_normal_user(
+    client: TestClient, normal_user_token_headers: dict[str, str], db: Session
+) -> None:
+    username = random_email()
+    password = random_lower_string()
+    user_in = UserCreate(email=username, password=password)
+    opponent = crud.create_user(session=db, user_create=user_in)
+
+    me_response = client.get(
+        f"{settings.API_V1_STR}/users/me", headers=normal_user_token_headers
+    )
+    current_user = me_response.json()
+
+    response = client.get(
+        f"{settings.API_V1_STR}/users/opponents", headers=normal_user_token_headers
+    )
+    assert response.status_code == 200
+    opponents = response.json()
+
+    opponent_ids = {item["id"] for item in opponents["data"]}
+    assert str(opponent.id) in opponent_ids
+    assert current_user["id"] not in opponent_ids
+
+
 def test_update_user_me(
     client: TestClient, normal_user_token_headers: dict[str, str], db: Session
 ) -> None:

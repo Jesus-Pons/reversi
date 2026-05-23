@@ -5,6 +5,7 @@ import { ScoreBoard } from '../components/game/ScoreBoard';
 import { StatusBanner } from '../components/game/StatusBanner';
 import { GamesService } from '../client/sdk.gen'; 
 import type { Game, Winner } from '../client/types.gen';
+import useAuth from '../hooks/useAuth';
 
 interface GamePageProps {
   gameId: string;
@@ -16,6 +17,7 @@ export const GamePage: React.FC<GamePageProps> = ({ gameId }) => {
   const [message, setMessage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const fetchGame = useCallback(async () => {
     if (!gameId) return;
@@ -40,8 +42,13 @@ export const GamePage: React.FC<GamePageProps> = ({ gameId }) => {
     (game.current_turn === 'white' && !game.player_white_id)
   );
 
+  const isMyTurn = !!game && !isGameOver && !!user?.id && (
+    (game.current_turn === 'black' && game.player_black_id === user.id) ||
+    (game.current_turn === 'white' && game.player_white_id === user.id)
+  );
+
   useEffect(() => {
-    if (!game || isGameOver || isBotTurn || !gameId) {
+    if (!game || isGameOver || isBotTurn || !isMyTurn || !gameId) {
       setValidMoves([]);
       return;
     }
@@ -56,7 +63,7 @@ export const GamePage: React.FC<GamePageProps> = ({ gameId }) => {
     };
 
     fetchValidMoves();
-  }, [game?.current_turn, gameId, isBotTurn, isGameOver]); 
+  }, [game?.current_turn, gameId, isBotTurn, isGameOver, isMyTurn]); 
 
   useEffect(() => {
     if (!game || isGameOver || !isBotTurn || isProcessing || !gameId) return;
@@ -83,7 +90,7 @@ export const GamePage: React.FC<GamePageProps> = ({ gameId }) => {
   }, [game, isBotTurn, gameId, fetchGame, isGameOver, isProcessing]);
 
   const handleCellClick = async (row: number, col: number) => {
-    if (!game || isBotTurn || isGameOver || !gameId) return;
+    if (!game || isBotTurn || isGameOver || !isMyTurn || !gameId) return;
 
     try {
       await GamesService.humanMove({
@@ -104,7 +111,7 @@ export const GamePage: React.FC<GamePageProps> = ({ gameId }) => {
 
   const boardMatrix = (game.board_state as number[][]) || [];
   const currentTurn = (game.current_turn as 'black' | 'white') || 'black';
-  const displayMessage = message || (isGameOver ? null : isBotTurn ? 'Esperando a la IA...' : 'Tu turno');
+  const displayMessage = message || (isGameOver ? null : isBotTurn ? 'Esperando a la IA...' : isMyTurn ? 'Tu turno' : 'Esperando al otro jugador');
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col items-center py-6 sm:py-10 relative">
@@ -121,7 +128,7 @@ export const GamePage: React.FC<GamePageProps> = ({ gameId }) => {
           boardState={boardMatrix}
           validMoves={validMoves}
           onCellClick={handleCellClick}
-          disabled={!!isBotTurn || isGameOver}
+          disabled={!!isBotTurn || !isMyTurn || isGameOver}
         />
         
         <StatusBanner 

@@ -427,6 +427,13 @@ export type UsersUpdatePasswordMeData = {
 
 export type UsersUpdatePasswordMeResponse = (Message);
 
+export type UsersReadOpponentsData = {
+    limit?: number;
+    skip?: number;
+};
+
+export type UsersReadOpponentsResponse = (UsersPublic);
+
 export type UsersRegisterUserData = {
     requestBody: UserRegister;
 };

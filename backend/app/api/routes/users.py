@@ -119,6 +119,23 @@ def read_user_me(current_user: CurrentUser) -> Any:
     return current_user
 
 
+@router.get("/opponents", response_model=UsersPublic)
+def read_opponents(
+    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+) -> Any:
+    """
+    Retrieve active users that can be selected as game opponents.
+    """
+    filters = (col(User.is_active) == True) & (User.id != current_user.id)  # noqa: E712
+    count_statement = select(func.count()).select_from(User).where(filters)
+    count = session.exec(count_statement).one()
+
+    statement = select(User).where(filters).offset(skip).limit(limit)
+    users = session.exec(statement).all()
+
+    return UsersPublic(data=users, count=count)
+
+
 @router.delete("/me", response_model=Message)
 def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
     """
@@ -213,7 +230,6 @@ def delete_user(
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
-    session.exec(statement)  # type: ignore
     session.delete(user)
     session.commit()
     return Message(message="User deleted successfully")
